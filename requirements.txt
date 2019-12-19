@@ -1,0 +1,11 @@
+jinja2
+biopython>=1.70
+pandas>=0.23.0
+pathlib
+numpy
+svgwrite
+psutil
+pytest
+sh
+packaging
+snakemake>=5.4.0

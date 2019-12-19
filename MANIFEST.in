@@ -1,0 +1,4 @@
+include package_name/tests/*
+include package_name/utils/*
+include package_name/templates/*
+
