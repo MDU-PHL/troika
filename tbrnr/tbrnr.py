@@ -11,29 +11,58 @@ import configargparse
 import pathlib
 import sys
 import os
-from package_name.Class_file_1 import SomeClass
+from tbrnr.TBAmr import TBAmr
 
 def run_pipeline(args):
     '''
-    Run the pipeline for the first time
+    Run the pipeline
     '''
-    R = SomeClass(args)
-    return(R.run_pipeline())
+    T = TBAmr(args)
+    return(T.run_pipeline())
 
 
 def main():
     # setup the parser
   
-    parser = configargparse.ArgumentParser(description='package_name - Some description',formatter_class=configargparse.ArgumentDefaultsHelpFormatter)
-    # subparser for running the pipeline
-    # if using sub commands use add_subparser otherwise 
-    subparsers = parser.add_subparsers(help="Task to perform") # remove if not using sub commands
-    parser_sub_run = subparsers.add_parser('run', help='Initial run of Bohra', formatter_class=configargparse.ArgumentDefaultsHelpFormatter,default_config_files=[f"{pathlib.Path.cwd().absolute() / 'bohra.conf'}"])
-    
+    parser = configargparse.ArgumentParser(description='TBrnr - a pipeline for detection and reporting of genomic AST in Mtb',formatter_class=configargparse.ArgumentDefaultsHelpFormatter)
     # use add_argument
-    parser.add_argument('--longform', '-l', help='Help description', default = 'default_value')
+    parser.add_argument('--input_file',
+        '-i', 
+        help='Input file tab-delimited file 3 columns isolate_id path_to_r1 path_to_r2',
+        default = '')
+    parser.add_argument(
+        "--Singularity",
+        "-S",
+        action="store_true",
+        help="If using singularity container for AMRfinderplus"
+    )
+    parser.add_argument(
+        "--singularity_path",
+        "-s",
+        default="",
+        help="Path to the singularity container for TB-profiler, if empty will defualt to shub://phgenomics-singularity/tbprofiler"
+    )
+    parser.add_argument(
+        "--workdir",
+        "-w",
+        default=f"{pathlib.Path.cwd().absolute()}",
+        help="Working directory, default is current directory",
+    )
+    parser.add_argument(
+        "--resources",
+        "-r",
+        default=f"{pathlib.Path(__file__).parent }",
+        help="Directory where templates are stored",
+    )
+    parser.add_argument(
+        "--jobs", "-j", default=16, help="Number of jobs to run in parallel."
+    )
 
-    
+    parser.add_argument('--cpus',
+        '-c',
+        help='Number of CPU cores to run, will define how many rules are run at a time', 
+        default=36
+    )
     parser.set_defaults(func=run_pipeline)
     args = parser.parse_args()
     
