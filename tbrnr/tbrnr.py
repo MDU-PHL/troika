@@ -11,13 +11,15 @@ import configargparse
 import pathlib
 import sys
 import os
-from tbrnr.TBAmr import TBAmr
+import datetime
+import TBAmr
+import versions
 
 def run_pipeline(args):
     '''
     Run the pipeline
     '''
-    T = TBAmr(args)
+    T = TBAmr.TBAmr(args)
     return(T.run_pipeline())
 
 
@@ -58,11 +60,21 @@ def main():
         "--jobs", "-j", default=16, help="Number of jobs to run in parallel."
     )
 
-    parser.add_argument('--cpus',
-        '-c',
-        help='Number of CPU cores to run, will define how many rules are run at a time', 
-        default=36
+    parser.add_argument('--threads',
+        '-t',
+        help='Number of threads to run TB-profiler', 
+        default=1
     )
+    parser.add_argument('--output',
+        '-o',
+        help = "Name of output files",
+        default=f"tbrnr_{datetime.datetime.today().strftime('%d_%m_%y')}"
+    )
+    parser.add_argument('--db_version',
+        help='The version of database being used.', 
+        default=versions.db_version
+    )
+
     parser.set_defaults(func=run_pipeline)
     args = parser.parse_args()
     

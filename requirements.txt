@@ -9,3 +9,4 @@ pytest
 sh
 packaging
 snakemake>=5.4.0
+xlsxwriter
