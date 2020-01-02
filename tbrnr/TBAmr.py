@@ -96,6 +96,7 @@ class TBAmr(object):
         else:
             logger.warning(f"{read_source} does not seem to a valid path. Please check your input and try again.")
             raise SystemExit()
+    
     def path_exists(self,path, v = True):
         '''
         ensure files are present, if so continues if not quits with FileNotFoundError

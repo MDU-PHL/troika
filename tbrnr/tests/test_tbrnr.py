@@ -24,3 +24,14 @@ def test_2col_dimensions():
                 detect_obj = TBAmr()
                 tab = pandas.DataFrame({'A':[1], 'B':[2]})
                 assert detect_obj.three_cols(tab) == False
+
+
+def test_path_exists():
+        '''
+        test that path_exists returns True
+        '''
+        with patch.object(TBAmr, "__init__", lambda x: None):
+                p = pathlib.Path('tbrnr','tests', 'tbrnr.txt')
+                detect_obj = TBAmr()
+                assert detect_obj.path_exists(p)
+
