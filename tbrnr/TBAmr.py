@@ -12,8 +12,8 @@ import subprocess
 import json
 from Bio import SeqIO, Phylo
 from packaging import version
-from logger import logger
-import versions
+from tbrnr.logger import logger
+import tbrnr.versions
 
 
 
@@ -212,7 +212,8 @@ class TBAmr(object):
         once all checks have passed then construct the command
         '''
         # TODO add support for sbatch and qsub
-        cmd = f"snakemake -s {self.resources / 'templates' / 'tbamr.smk'} -j {self.jobs} -d {self.workdir} 2>&1 | tee -a {self.workdir / 'tbrnr.log'}"
+        singularity = f"--use-singularity --singularity-args '--bind /home'" if self.run_singulairty else ''
+        cmd = f"snakemake -s {self.resources / 'templates' / 'tbamr.smk'} -j {self.jobs} -d {self.workdir} {singularity} 2>&1 | tee -a {self.workdir / 'tbrnr.log'}"
         return cmd
         # snakemake -s "/opt/conda/lib/python3.7/site-packages/abritamr/templates/Snakefile.smk" -j 16 -d /home/khhor/MDU/JOBS/ad_hoc/abritamr_in_parallel/20191219  2>&1 | tee -a /home/khhor/MDU/JOBS/ad_hoc/abritamr_in_parallel/20191219/job.log.
 
