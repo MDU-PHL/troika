@@ -65,14 +65,14 @@ def get_dr_variants(data):
     # Check with Norelle - whether or not she wants to include drugs which did not fall in the validated dataset
     # a dictionary defaulted to 'No mutation detected'
     d = {
-        'Amikacin':'No mutation detected', 
-        'Aminoglycosides':'No mutation detected',
+        'Amikacin':'No mutation detected', #Block 2
+        # 'Aminoglycosides':'No mutation detected',
         'Bedaquiline':'No mutation detected',
         'Capreomycin':'No mutation detected',
         'Ciprofloxacin':'No mutation detected', 
         'Clofazimine':'No mutation detected',
         'Cycloserine':'No mutation detected',
-        'Delamanid':'No mutation detected',
+        'Delamanid':'No mutation detected', #Block 3
         'Ethambutol':'No mutation detected', 
         'Ethionamide':'No mutation detected', 
         'Fluoroquinolones':'No mutation detected', 
@@ -80,7 +80,7 @@ def get_dr_variants(data):
         'Kanamycin':'No mutation detected', 
         'Levofloxacin':'No mutation detected', 
         'Linezolid':'No mutation detected', 
-        'Moxifloxacin':'No mutation detected',
+        'Moxifloxacin':'No mutation detected', #Block 1
         'Ofloxacin':'No mutation detected', 
         'Para-aminosalicylic_acid':'No mutation detected',
         'Pyrazinamide':'No mutation detected',
@@ -143,7 +143,7 @@ def calculate_resistance(drugs_dict):
 
 def make_df(result_dict):
 
-    cols_list = ['MDU ID', 'Organism identification by WGS', 'Phylogenetic lineage', 'Predicted drug resistance','Rifampicin', 'Isoniazid', 'Pyrazinamide', 'Ethambutol','Moxifloxacin','Amikacin', 'Cycloserine','Kanamycin','Capreomycin','Para-aminosalicylic_acid','Levofloxacin','Ciprofloxacin','Ofloxacin','Fluoroquinolones', 'Ethionamide','Linezolid','Clofazimine','Aminoglycosides','Bedaquiline', 'Database version used for analysis']
+    cols_list = ['MDU ID', 'Organism identification by WGS', 'Phylogenetic lineage', 'Predicted drug resistance','Rifampicin', 'Isoniazid', 'Pyrazinamide', 'Ethambutol','Moxifloxacin','Amikacin', 'Cycloserine', 'Ethionamide', 'Para-aminosalicyclic acid','Clofazimine', 'Delaminid', 'Bedaquiline', 'Linezolid','Database version used for analysis']
     
     df = pandas.DataFrame.from_dict(data = result_dict, orient = 'index')
     df = df.reset_index()

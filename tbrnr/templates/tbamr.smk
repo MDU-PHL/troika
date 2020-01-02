@@ -5,7 +5,7 @@ SAMPLE_STRING = ','.join(SAMPLES)
 SINGULARITY_PATH = config['singularity_path'] # path to container for running tb-profiler
 THREADS = config['threads']
 SCRIPT_PATH = config['script_path']
-FINAL_OUTPUT = config['final_output'] # a two item list - jobid.csv, jobid.json
+FINAL_OUTPUT = config['final_output'].split(',') # a two item list - jobid.csv, jobid.json
 DB_VERSION = config['db_version']
 
 rule all:
@@ -22,17 +22,17 @@ rule run_tbprofiler:
         "results/{sample}.results.json", "vcf/{sample}.targets.vcf.gz"
     shell:
         """
-        tb-profiler profile -1 {input.r1} -2 {input.r2} -p {wildcards.sample} --caller BCFtools -t {threads}
+        tb-profiler profile -1 {input.r1} -2 {input.r2} -p {wildcards.sample} --caller bcftools -t {threads}
         """
 
 rule collate_resistance:
     input:
         expand("results/{sample}.results.json", sample = SAMPLES)
     output:
-        'tbrnr.csv', 'tbrnr.jsob'
+        'tbrnr.csv', 'tbrnr.json'
     params:
-        script_path = SCRIPT_PATH
-        db_version = DB_VERSION
+        script_path = SCRIPT_PATH,
+        db_version = DB_VERSION,
         sample = SAMPLE_STRING
     shell:
         """

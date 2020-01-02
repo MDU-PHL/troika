@@ -96,6 +96,24 @@ class TBAmr(object):
         else:
             logger.warning(f"{read_source} does not seem to a valid path. Please check your input and try again.")
             raise SystemExit()
+    def path_exists(self,path, v = True):
+        '''
+        ensure files are present, if so continues if not quits with FileNotFoundError
+        input:
+            :path: patht to files for pipeline
+            :v: if v == True print message, else just check
+        output:
+            returns True (or fails with FileNotFoundError)
+        '''
+        
+        if not path.exists():
+            logger.warning(f"The {path.name} does not exist.")
+            raise FileNotFoundError(f"{path.name}")
+        else:
+            if v == True:
+                logger.info(f"Found {path.name}.")
+
+            return True
 
     def check_reads_exists(self, tab):
         '''
@@ -132,7 +150,8 @@ class TBAmr(object):
             raise TypeError(f"{self.input_file} appears to be missing some inforamtion.")
         
         self.check_reads_exists(tab = tab)
-        self.isolates = ' '.join(list(tab.iloc[0]))
+        
+        self.isolates = ' '.join(list(tab.iloc[:,0]))
     
     def check_input_file(self, path):
         '''
@@ -153,8 +172,9 @@ class TBAmr(object):
         logger.info(f"Checking that tb-profiler is installed and recording version.")
         version_pat = re.compile(r'\bv?(?P<major>[0-9]+)\.(?P<minor>[0-9]+)\.(?P<release>[0-9]+)(?:\.(?P<build>[0-9]+))?\b')
         try:
-            tp = subprocess.run(['tb-profiler', 'version'], capture_output = True)
+            tp = subprocess.run(['tb-profiler', 'version'], capture_output = True, encoding='utf-8')
             tp = tp.stdout
+            # logger.info(f"{tp}")
             self.profiler_version = version_pat.search(tp).group(0)
             logger.info(f"TB-Profiler version {self.profiler_version} found. Good job!")
     
@@ -196,7 +216,7 @@ class TBAmr(object):
         return cmd
         # snakemake -s "/opt/conda/lib/python3.7/site-packages/abritamr/templates/Snakefile.smk" -j 16 -d /home/khhor/MDU/JOBS/ad_hoc/abritamr_in_parallel/20191219  2>&1 | tee -a /home/khhor/MDU/JOBS/ad_hoc/abritamr_in_parallel/20191219/job.log.
 
-    def run_snakemake(self, cmd):
+    def run_snakemake(self):
         '''
         run the snakemake command
         '''
