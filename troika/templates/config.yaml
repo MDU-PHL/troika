@@ -1,12 +1,29 @@
 samples:
   {{samples}}
-singularity_path:
-  {{singularity_path}}
-threads:
-  {{threads}}
+singularity_path_profiler:
+  {{singularity_path_profiler}}
+profiler_threads:
+  {{profiler_threads}}
 script_path:
   {{script_path}}
 final_output:
   {{final_output}}
 db_version:
   {{db_version}}
+run_species:
+  {{run_species}}
+kraken_db:
+  {{kraken_db}}
+kraken_threads:
+  {{kraken_threads}}
+snippy_threads:
+  {{snippy_threads}}
+reference:
+  {{reference}}
+mask:
+  {{mask}}
+amr_only:
+  {{amr_only}}
+
+
+

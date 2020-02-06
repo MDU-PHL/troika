@@ -12,16 +12,15 @@ import pathlib
 import sys
 import os
 import datetime
-import TBAmr
+import RunTroika
 import versions
 
 def run_pipeline(args):
     '''
     Run the pipeline
     '''
-    T = TBAmr.TBAmr(args)
+    T = RunTroika.Troika(args)
     return(T.run_pipeline())
-
 
 def main():
     # setup the parser
@@ -46,13 +45,13 @@ def main():
         "--Singularity",
         "-S",
         action="store_true",
-        help="If using singularity container for AMRfinderplus"
+        help="If singularity is to be used for troika."
     )
     parser.add_argument(
-        "--singularity_path",
-        "-s",
-        default="",
-        help="Path to the singularity container for TB-profiler, if empty will defualt to docker://mduphl/tbprofiler"
+        '--singularity_path',
+        '-s',
+        help='URL for TB-profiler singularity container.',
+        default = 'docker://mduphl/tbprofiler'
     )
     parser.add_argument(
         "--workdir",
@@ -69,11 +68,24 @@ def main():
     parser.add_argument(
         "--jobs", "-j", default=8, help="Number of jobs to run in parallel."
     )
-
-    parser.add_argument('--threads',
+    parser.add_argument('--profiler_threads',
         '-t',
         help='Number of threads to run TB-profiler', 
         default=1
+    )
+    parser.add_argument('--kraken_threads',
+        '-kt',
+        help = 'Number of threads for kraken',
+        default = 4
+    )
+    parser.add_argument('--kraken_db', 
+        '-k', 
+        env_var='KRAKEN2_DEFAULT_DB', 
+        help='Path to DB for use with kraken2, if no DB present speciation will not be performed.'
+    )
+    parser.add_argument('--snippy_threads',
+        '-st',
+        help = 'Number of threads for snippy'
     )
     parser.add_argument('--output',
         '-o',
