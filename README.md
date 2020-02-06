@@ -2,7 +2,7 @@
 
 
 
-# TBrnr
+# Troika
 
 Detection of resistance mechanisms in _Mycobacterium tuberculosis_ is dependent upon identification of SNPs that may confer decreased susceptibility to anti-mycobacterial drugs. TBrnr is a pipeline, which implements [TB-profiler](https://github.com/jodyphelan/TBProfiler) and its related database to detect resistance conferring mutations from Illumina read data and filters these results for reporting for public health and clinical use in Australia.
 
