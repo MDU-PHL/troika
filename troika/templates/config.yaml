@@ -24,6 +24,8 @@ mask:
   {{mask}}
 amr_only:
   {{amr_only}}
+template_path:
+  {{template_path}}
 
 
 

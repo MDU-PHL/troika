@@ -42,8 +42,13 @@ class Report:
                 row = [f"<tr class='{raw[0]}-sequence-data'>"]
             else:
                 row = [f"<tr>"] # TODO add class isolate id to <tr>
-            for d in raw:
-                row.append(f"<td align=\"center\">{d}</td>")
+            if 'distances.tab' in table:
+                for d in raw:
+                    for c in header:
+                        row.append(f"<td align=\"center\" class = \"{d}_{c}\">{d}</td>")    
+            else:
+                for d in raw:
+                    row.append(f"<td align=\"center\">{d}</td>")
             row.append(f"</tr>")
             body = body + row
         return('\n'.join(tablehead),'\n'.join(body))
@@ -288,11 +293,29 @@ class Report:
             elif 'tbrnr' in tab:
                 res = pandas.read_csv(tab)
                 res = res[['MDU ID', 'Predicted drug resistance']]
+                res = res.rename(columns = {'MDU ID': 'Isolate'})
                 summary_df = self.merge_dfs(summary_df,res)
-
+        if 'Species' not in list(summary_df.columns):
+            summary_df['Species'] = 'Species detection not performed'
         summary_file = reportdir / 'summary_table.tab'
         summary_df.to_csv(summary_file, sep = '\t', index = False)
-        
+
+    def get_metadata(self, report_dir):
+
+        resdata = pandas.read_csv(report_dir / 'tbrnr.csv') 
+        data = {}
+        for row in resdata.iterrows():
+            rif =  "#f03329" if row[1]["Rifampicin"]!= "No mutn det" else "#adf0ad"
+            inh = "#f03329" if row[1]["Isoniazid"]!= "No mutn det" else "#adf0ad"
+            pza = "#f03329" if row[1]["Pyrazinamide"]!= "No mutn det" else "#adf0ad"
+            emb = "#f03329" if row[1]["Ethambutol"]!= "No mutn det" else "#adf0ad"
+            data[row[1]["MDU ID"]] = {
+                'Rif':{'colour':rif},
+                'Inh':{'colour':inh},
+                'Pza':{'colour':pza},
+                'Emb':{'colour':emb}
+            }
+        return data,len(list(resdata['MDU ID']))
 
     def main(self,workdir, resources, amr_only):
         '''
@@ -332,11 +355,10 @@ class Report:
         species_id_td = 
         
         # list of assembly tasks       
-        
         if not amr_only:
             td.extend(s_td)
             tables =['core-genome', 'snp-distances', 'sequence-data']
-            modaltables =['core-genome',  'sequence-data']
+            modaltables =['dr-resistance','sequence-data', 'core-genome']
             display = f"display:inline;"
         
         tables.append('versions')
@@ -364,11 +386,12 @@ class Report:
             if td[t]['type'] == 'summary':
                 self.generate_summary(reportdir = reportdir)
                 td[t]['head'], td[t]['body'] = self.write_tables(reportdir = reportdir, table = td[t]['file'])
+        metadata_string,height  = self.get_metadata(reportdir)
         
         # fill template
         date = datetime.datetime.today().strftime("%d/%m/%y")
         report_template = jinja2.Template(pathlib.Path(indexhtml).read_text())
-        reporthtml.write_text(report_template.render(newick = newick_string, display = display,tables = tables,td = td, snpdistances=snpdistances, snpdensity = snpdensity, modaltables = modaltables, date = date))
+        reporthtml.write_text(report_template.render(newick = newick_string, display = display,tables = tables,td = td, snpdistances=snpdistances, snpdensity = snpdensity, modaltables = modaltables, date = date, metadata_string = metadata_string, height = height))
     #    TODO pass a list of links for the javascript section called 'table'
     # TODO pass the value of the graphs as separate variable 
         return(True)
@@ -377,7 +400,5 @@ if __name__ == '__main__':
     report = Report()
     wd = f"{sys.argv[1]}"
     a = f"{sys.argv[3]}"
-    i = f"{sys.argv[4]}"
-    a = f"{sys.argv[5]}"
-    k = f"{sys.argv[6]}"
+    
     report.main(resources=f"{sys.argv[2]}", workdir=wd, amr_only= a)

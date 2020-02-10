@@ -222,7 +222,7 @@ class Troika(object):
         config_target = self.workdir / "config.yaml"
         config_target.write_text(
             config_template.render(
-                script_path=f"{self.resources / 'utils'}", samples=self.isolates,singularity_path = self.singularity_path, profiler_threads = self.profiler_threads, final_output = final_output, db_version = self.db_version,run_species = self.detect_species,kraken_db = self.kraken_db, kraken_threads =self.kraken_threads, snippy_threads = self.snippy_threads, amr_only = self.resistance_only, reference = f"{self.resources / 'reference'/ 'tbdb.fasta'}", mask = f"{self.resources / 'reference'/ 'mask.bed'}"
+                template_path = f"{self.resources / 'templates'}",script_path=f"{self.resources / 'utils'}", samples=self.isolates,singularity_path = self.singularity_path, profiler_threads = self.profiler_threads, final_output = final_output, db_version = self.db_version,run_species = self.detect_species,kraken_db = self.kraken_db, kraken_threads =self.kraken_threads, snippy_threads = self.snippy_threads, amr_only = self.resistance_only, reference = f"{self.resources / 'reference'/ 'tbdb.fasta'}", mask = f"{self.resources / 'reference'/ 'mask.bed'}"
             )
         )
   

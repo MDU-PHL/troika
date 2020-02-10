@@ -35,6 +35,8 @@ SNIPPY_THREADS = config['snippy_threads']
 REFERENCE = config['reference']
 MASK = config['mask']
 AMR_ONLY = config['amr_only']
+WORKDIR = f"{pathlib.Path.cwd().absolute()}"
+TEMPLATE_PATH = config['template_path']
 REPORT_INPUT = get_report_input(amr_only = AMR_ONLY, final_output= FINAL_OUTPUT)
 
 rule all:
@@ -329,7 +331,12 @@ rule collate_report:
         REPORT_INPUT
     output:
         'report/index.html'
+    params:
+        script_path = SCRIPT_PATH,
+        template_path = TEMPLATE_PATH,
+        workdir = WORKDIR,
+        amr_only = AMR_ONLY
     shell:
         """
-        runs some script
+        python3 {params.script_path}/write_report.py {params.template_path} {params.workdir} {params.amr_only}
         """

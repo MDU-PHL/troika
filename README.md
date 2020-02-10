@@ -4,17 +4,17 @@
 
 # Troika
 
-Detection of resistance mechanisms in _Mycobacterium tuberculosis_ is dependent upon identification of SNPs that may confer decreased susceptibility to anti-mycobacterial drugs. TBrnr is a pipeline, which implements [TB-profiler](https://github.com/jodyphelan/TBProfiler) and its related database to detect resistance conferring mutations from Illumina read data and filters these results for reporting for public health and clinical use in Australia.
+Detection of resistance mechanisms in _Mycobacterium tuberculosis_ is dependent upon identification of SNPs that may confer decreased susceptibility to anti-mycobacterial drugs. Troika is a pipeline, which calls SNPs for both phylogenetic analysis and determination of AST. Troika leverages high quality tools, including [Snippy](https://github.com/tseemann/snippy) and [TB-profiler](https://github.com/jodyphelan/TBProfiler) and its related database to detect resistance conferring mutations from Illumina read data and filters these results for reporting for public health and clinical use in Australia.
 
 
 ### Motivation
 
-There are many tools and databases available, however, for the purposes of reporting genomic AST for _M. tuberculosis_ in the context of public health and clinical use in Australia customisation is required. Rather than reinventing the wheel, TBrnr leverages a high quality database and detection tool which is highly customisable.
+There are many tools and databases available, however, for the purposes of reporting genomic AST for _M. tuberculosis_ in the context of public health and clinical use in Australia customisation is required. Rather than reinventing the wheel, Troika leverages a high quality database and a detection tool which is highly customisable. 
 
 
 ## Pipeline
 
-TBrnr is designed for batch reporting of AST in _M. tuberculosis_ isolates generated from Illumina reads.
+Troika is designed for batch reporting of AST in _M. tuberculosis_ isolates generated from Illumina reads and phylogenetic analysis and clustering to identify potentially related isolates. This pipeline is in use at MDU Victoria Australia for Tuberculosis surveillance and AST reporting.
 
 ### Installation
 
@@ -25,7 +25,7 @@ TO COME
 #### PyPi
 
 
-### Running TBrnr
+### Running Troika
 
 TO COME
 
