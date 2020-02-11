@@ -36,7 +36,8 @@ class Troika(object):
         formatter = logging.Formatter('[%(levelname)s:%(asctime)s] %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
         fh.setFormatter(formatter)
         ch.setFormatter(formatter)
-
+        self.logger.addHandler(ch)
+        self.logger.addHandler(fh)
         self.logger.info(f"Initialising Troika")
         self.now = datetime.datetime.today().strftime("%d_%m_%y_%H")
         self.day = datetime.datetime.today().strftime("%d_%m_%y")
@@ -63,8 +64,8 @@ class Troika(object):
         set the number of jobs to run in parallel based on the number of cpus from args
         '''
         self.logger.info(f"Determining number of jobs to run in parallel.")
-
-        if int(self.jobs * self.threads) > int(psutil.cpu_count()):
+        threads = max([self.kraken_threads, self.profiler_threads, self.snippy_threads])
+        if int(self.jobs * threads) > int(psutil.cpu_count()):
             self.jobs = int(psutil.cpu_count()) - 1
     
         self.logger.info(f"TBrnr will run : {self.jobs} in parallel... keeping it nice.")
@@ -232,7 +233,7 @@ class Troika(object):
         '''
         # TODO add support for sbatch and qsub
         singularity = f"--use-singularity --singularity-args '--bind /home'" if self.run_singulairty else ''
-        cmd = f"snakemake -s {self.resources / 'utils' / 'tbamr.smk'} -j {self.jobs} -d {self.workdir} {singularity}"
+        cmd = f"snakemake -s {self.resources / 'utils' / 'troika.smk'} -j {self.jobs} -d {self.workdir} {singularity}"
         return cmd
         
 

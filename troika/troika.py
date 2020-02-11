@@ -85,12 +85,13 @@ def main():
     )
     parser.add_argument('--snippy_threads',
         '-st',
-        help = 'Number of threads for snippy'
+        help = 'Number of threads for snippy',
+        default = 8
     )
     parser.add_argument('--output',
         '-o',
         help = "Name of output files",
-        default=f"tbrnr_{datetime.datetime.today().strftime('%d_%m_%y')}"
+        default=f"troika"
     )
     parser.add_argument('--db_version',
         help=f'The version of database being used.', 

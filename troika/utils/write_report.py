@@ -17,41 +17,41 @@ class Report:
         # TODO add class isolate id to <tr>
         # TODO add class distances-isolate to tr if matrix and head-isolate to head td
         path = reportdir / f"{table}"
-        data = open(path).readlines()
-        # for header
-        header = data[0].split('\t')
-        if 'distances.tab' in table:
-            tablehead = [f"<th class='{column}-head'>{column}</th>" for column in header]
-        else:
-            tablehead = [f"<th>{column}</th>" for column in header]
-        # for body seqtablebody
-        body = []
-        for i in range(1,len(data)):
-            raw = data[i].split('\t')
-            if 'summary_table.tab' in table:
-                row = [f"<tr class='{raw[0]} tiplab'>"]
-            elif 'distances.tab' in table:
-                row = [f"<tr class='distances-{raw[0]}'>"]
-            elif 'mtb' in table:
-                row = [f"<tr class='{raw[0]}-species-identification'>"]
-            elif 'core_genome.tab' in table:
-                row = [f"<tr class='{raw[0]}-core-genome'>"]
-            elif 'tbrnr.csv' in table:
-                row = [f"<tr class='{raw[0]}-dr-resistance'>"]
-            elif 'seqdata.tab' in table:
-                row = [f"<tr class='{raw[0]}-sequence-data'>"]
-            else:
-                row = [f"<tr>"] # TODO add class isolate id to <tr>
+        if path.exists():
+            data = open(path).readlines()
+            # for header
+            header = data[0].split('\t') 
             if 'distances.tab' in table:
-                for d in raw:
-                    for c in header:
-                        row.append(f"<td align=\"center\" class = \"{d}_{c}\">{d}</td>")    
+                tablehead = [f"<th class='{column}-head'>{column}</th>" for column in header]
             else:
-                for d in raw:
-                    row.append(f"<td align=\"center\">{d}</td>")
-            row.append(f"</tr>")
-            body = body + row
-        return('\n'.join(tablehead),'\n'.join(body))
+                tablehead = [f"<th>{column}</th>" for column in header]
+            # for body seqtablebody
+            body = []
+            for i in range(1,len(data)):
+                raw = data[i].split('\t')  
+                if 'summary_table.tab' in table:
+                    row = [f"<tr class='{raw[0]} tiplab'>"]
+                elif 'distances.tab' in table:
+                    row = [f"<tr class='distances-{raw[0]}'>"]
+                elif 'mtb' in table:
+                    row = [f"<tr class='{raw[0]}-species-identification'>"]
+                elif 'core_genome.tab' in table:
+                    row = [f"<tr class='{raw[0]}-core-genome'>"]
+                elif 'troika.tab' in table:
+                    row = [f"<tr class='{raw[0]}-drug-resistance'>"]
+                elif 'seqdata.tab' in table:
+                    row = [f"<tr class='{raw[0]}-sequence-data'>"]
+                else:
+                    row = [f"<tr>"] # TODO add class isolate id to <tr>
+                if 'distances.tab' in table:
+                    for d in range(len(raw)):
+                        row.append(f"<td align=\"center\" class = \"{raw[0]}_{header[d]}\">{raw[d]}</td>")    
+                else:
+                    for d in raw:
+                        row.append(f"<td align=\"center\">{d}</td>")
+                row.append(f"</tr>")
+                body = body + row
+            return('\n'.join(tablehead),'\n'.join(body))
 
     
 
@@ -193,7 +193,7 @@ class Report:
         # get tree
 
         with open(f"{reportdir / 'core.treefile'}", 'r') as t:
-            tree = t.readlines().strip()
+            tree = t.read().strip()
 
         return tree
 
@@ -271,29 +271,30 @@ class Report:
         '''
         function to generate a summary table
         '''
-        tabs = ['tbrnr.csv', 'mtb.tab', 'distances.tab', 'seqdata.tab','core_genome.tab','core.treefile','core.tab']
+        tabs = ['troika.tab', 'mtb.tab', 'distances.tab', 'seqdata.tab','core_genome.tab','core.treefile','core.tab']
         summary_df = pandas.DataFrame()
         df_list = []
-        # print(tabs)
+        print(tabs)
         for tab in tabs:
             # print(df)
-            if tab == 'mtb.tab':
+            if tab == 'mtb.tab' and pathlib.Path(reportdir, 'mtb.tab').exists():
                 species = pandas.read_csv(tab, sep = '\t')
                 species = species[['Isolate', '#1 Match']]
                 summary_df = self.merge_dfs(summary_df, species)
                 summary_df = summary_df.rename(columns={'#1 Match': 'Species'})
             elif 'seqdata' in tab:
-                seq = pandas.read_csv(tab, sep = '\t')
+                seq = pandas.read_csv(pathlib.Path(reportdir, tab), sep = '\t')
                 seq = seq[['Isolate', 'Estimated depth']]
                 summary_df = self.merge_dfs(summary_df, seq)
             elif 'core_genome' in tab:
-                core = pandas.read_csv(tab, sep = '\t')
+                core = pandas.read_csv(pathlib.Path(reportdir, tab), sep = '\t')
                 core = core[['Isolate', '% USED']]
                 summary_df = self.merge_dfs(summary_df, core)
-            elif 'tbrnr' in tab:
-                res = pandas.read_csv(tab)
-                res = res[['MDU ID', 'Predicted drug resistance']]
-                res = res.rename(columns = {'MDU ID': 'Isolate'})
+            elif 'troika' in tab:
+                res = pandas.read_csv(pathlib.Path(reportdir, tab), sep = '\t')
+                # print(res.columns)
+                res = res[['Isolate', 'Predicted drug resistance', 'Phylogenetic lineage']]
+                # res = res.rename(columns = {'MDU ID': 'Isolate'})
                 summary_df = self.merge_dfs(summary_df,res)
         if 'Species' not in list(summary_df.columns):
             summary_df['Species'] = 'Species detection not performed'
@@ -302,20 +303,21 @@ class Report:
 
     def get_metadata(self, report_dir):
 
-        resdata = pandas.read_csv(report_dir / 'tbrnr.csv') 
+        resdata = pandas.read_csv(report_dir / 'troika.tab', sep = '\t') 
         data = {}
         for row in resdata.iterrows():
-            rif =  "#f03329" if row[1]["Rifampicin"]!= "No mutn det" else "#adf0ad"
-            inh = "#f03329" if row[1]["Isoniazid"]!= "No mutn det" else "#adf0ad"
-            pza = "#f03329" if row[1]["Pyrazinamide"]!= "No mutn det" else "#adf0ad"
-            emb = "#f03329" if row[1]["Ethambutol"]!= "No mutn det" else "#adf0ad"
-            data[row[1]["MDU ID"]] = {
+            print(row[1])
+            rif =  "#adf0ad" if row[1]["Rifampicin"]== "No mutation detected" else "#f03329"
+            inh = "#adf0ad" if row[1]["Isoniazid"]== "No mutation detected" else "#f03329"
+            pza = "#adf0ad" if row[1]["Pyrazinamide"]== "No mutation detected" else "#f03329"
+            emb = "#adf0ad" if row[1]["Ethambutol"]== "No mutation detected" else "#f03329"
+            data[row[1]["Isolate"]] = {
                 'Rif':{'colour':rif},
                 'Inh':{'colour':inh},
                 'Pza':{'colour':pza},
                 'Emb':{'colour':emb}
             }
-        return data,len(list(resdata['MDU ID']))
+        return data,len(list(resdata['Isolate']))
 
     def main(self,workdir, resources, amr_only):
         '''
@@ -339,11 +341,12 @@ class Report:
         newick_path = reportdir / 'core.treefile'
         newick_string = open(newick_path).read().strip()
         # save tool table
-        self.get_software_file(reportdir = reportdir, pipeline = pipeline, assembler = assembler)
+        self.get_software_file(reportdir = reportdir)
         
         # table dictionary for each option
         
-        td = [{'file':'seqdata.tab', 'title':'Sequence Data', 'link': 'sequence-data', 'type' : 'table'}, {'file':'summary_table.tab','title':'Summary', 'link':'summary', 'type':'summary'}, {'file':'tbrnr.csv', 'title':'Drug Resistance', 'type':'table', 'link':'dr-resistance'}, {'file':'mtb.tab', 'title': 'Species Identification', 'type': 'table', 'link':'species-identification'}]
+        td = [{'file':'seqdata.tab', 'title':'Sequence Data', 'link': 'sequence-data', 'type' : 'table'}, {'file':'summary_table.tab','title':'Summary', 'link':'summary', 'type':'summary'}, {'file':'troika.tab', 'title':'Drug Resistance', 'type':'table', 'link':'drug-resistance'}]
+        sp = reportdir / 'mtb.tab'
         
         # TODO edit links to be title lower case separated by a -
         core_genome_td = {'file': 'core_genome.tab', 'title': 'Core Genome', 'link':'core-genome', 'type':'table'}
@@ -352,15 +355,15 @@ class Report:
         snp_distance_td = {'file': 'distances.tab', 'title':'SNP distances', 'type':'matrix', 'link':'snp-distances'}
         # list of snp tasks
         s_td = [core_genome_td,snp_density_td,core_phylogeny_td, snp_distance_td]
-        species_id_td = 
+        # species_id_td = 
         
         # list of assembly tasks       
-        if not amr_only:
-            td.extend(s_td)
-            tables =['core-genome', 'snp-distances', 'sequence-data']
-            modaltables =['dr-resistance','sequence-data', 'core-genome']
-            display = f"display:inline;"
-        
+    
+        td.extend(s_td)
+        tables =['drug-resistance', 'core-genome', 'snp-distances', 'sequence-data']
+        modaltables =['drug-resistance','sequence-data', 'core-genome']
+        display = f"display:inline;"
+    
         tables.append('versions')
         # get versions of software
         versions_td = {'file': 'software_versions.tab', 'title': 'Tools', 'type': 'versions', 'link':'versions'}
@@ -398,7 +401,9 @@ class Report:
 
 if __name__ == '__main__':
     report = Report()
-    wd = f"{sys.argv[1]}"
+    print(sys.argv)
+    wd = f"{sys.argv[2]}"
+    print(wd)
     a = f"{sys.argv[3]}"
     
-    report.main(resources=f"{sys.argv[2]}", workdir=wd, amr_only= a)
+    report.main(resources=f"{sys.argv[1]}", workdir=wd, amr_only= a)

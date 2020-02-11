@@ -47,6 +47,7 @@
     <style type="text/css">
         h2, h3 {
           padding:10px;
+          color:#3973ac;
         }
         header {
                 background-color: #3973ac;
@@ -119,8 +120,8 @@
   </head>
   <body>
     <header>
-      <h1 class="left">Troika</h1>
-        <p class ="right"> Analysis perf {{date}} </p>
+      <h1 class="left">Troika TB phylogeny and genomic AST</h1>
+        <p class ="right"> Analysis performed {{date}} </p>
         <hr>
     </header>
   <!-- Modals - individual isolates -->
@@ -128,7 +129,7 @@
     <div class="modal fade" id="myModal" role="dialog">
       <div class="modal-dialog modal-dialog-centered modal-xl" >
       <!-- Modal content-->
-        <div class="modal-content">
+        <div class="modal-content" style="overflow-x: scroll;">
             <h2 class="modal-title"> <!-- placeholder for isolate id --></h2>
             <h3 style= "color: #3973ac;">Summary Table</h3>
               <table id="" class="table table-striped table-bordered  modal-summary-table">
@@ -148,7 +149,7 @@
             {% for t in td %}
             {% if t.type == 'table' %}
             <h3 style= "color: #3973ac;">{{ t.title }}</h3>
-                <table id="" class="table table-striped table-bordered  modal-{{t.link}}">
+                <table id="" class="table table-striped table-bordered  modal-{{t.link}}" >
                   <thead>{{ t.head }}</thead>
                   <tbody class='modal-body-{{t.link}}'>
                     
@@ -176,23 +177,19 @@
         <div class="modal-content">
           <h2 class="modal-title" style= "color: #3973ac; margin:3px;"> Information </h2>
           <hr>
-          <h3 style="margin:6px;"> Download newick </h3>
-          <p style="margin:10px;"> Download the newick file by selecting the <span data-feather="arrow-down"></span> icon above the tree.</p>
-          <h3 style="margin:6px;"> View branch support </h3>
-          <p style="margin:10px;">Toggle branch support by selecting the <span data-feather="info"></span> icon above the tree.</p>
-          <h3 style="margin:6px;"> Highlight tree tips </h3>
-          <p style="margin:10px;">Toggle the isolates from the summary table to highlight their position in the tree</p>
-          <h3 style="margin:6px;"> Isolate details </h3>
-          <p style="margin:10px;">Select an isolate from the tree to see isolate specific details</p>
+          <h3 style="margin:6px;"> Download tree</h3>
+          <p style="margin:10px;"> To download a newick file right click on tree and select export as newick</p>
+          <h3 style="margin:6px;"> Isolate details</h3>
+          <p style="margin:10px;"> Select an isolate node from the tree to see isolate specific details</p>
           <h3 style="margin:6px;"> SNP distances </h3>
-          <p style="margin:10px;">Drag a box around a group of isolates that you would like to see SNP distances for</p>
+          <p style="margin:10px;"> Select the parent node to display pariwise SNP distances</p>
         </div>
       </div>
     </div>
 
 <div id="help-button" style = "float:right;">
   <button type="button" class="btn btn-sm btn-outline-secondary zoom-button" id = "help" data-toggle="modal" data-target="#myModal3" data-placement="top" title="Select"> Helpful tips </button>    
-  <button type="button" class="btn btn-sm btn-outline-secondary" id = "nwk" ><span data-feather="arrow-down"> Download newick </button>        
+         
 </div>
 <!-- div for summary table and phylogenetic tree -->
 <div class= "container-fluid">
@@ -224,20 +221,16 @@
           </table>
       </div>
       {% elif t.type == 'tree' %}
-    <div id="phylocanvas" style="width: 100%; height: {tree_height};" >
-      <div class = "radial-div">
-          <button id="change-tree" type="button" class="btn btn-sm btn-outline-secondary">Circular</button>
-      </div>
+    <div id="phylocanvas" style="width: 100%; height: {{tree_height}};" >
+      
       <!-- <p>{{message}}</p> -->
       
       <hr>
       <!-- button div -->
-      <div id="brnch-sprt">
-        <button type="button" class="btn btn-sm btn-outline-secondary" id = "sprt" ><span data-feather="info"> toggle branch support </button>      
-      </div>
-      <div id = "svg_div" style="overflow-y:scroll;">    
-        {{ t.image }}
-       </div>
+      <div class = "radial-div">
+        <button id="change-tree" type="button" class="btn btn-sm btn-outline-secondary">Circular</button>
+    </div>
+      
         {% endif %}
         {% endfor %}
       
@@ -382,8 +375,8 @@ tree.on('beforeFirstDraw', function () {
     tree.metadata.padding = 20;
     for (var i = 0; i < tree.leaves.length; i++) {
         console.log(tree.leaves[i].id);
-        console.log(m[tree.leaves[i].id]['Resistance']['label']);
-        console.log(m[tree.leaves[i].id]['Rif']['color']);
+        
+        if (tree.leaves[i].id != "Reference"){
         tree.leaves[i].data = {
         
         Rif:{
@@ -398,6 +391,23 @@ tree.on('beforeFirstDraw', function () {
         Emb:{
             colour : m[tree.leaves[i].id]['Emb']['colour']
         }
+    }
+    } else {
+      tree.leaves[i].data = {
+        
+        Rif:{
+            colour : "#adf0ad"
+        },
+        Inh:{
+            colour : "#adf0ad"
+        },
+        Pza:{
+            colour : "#adf0ad"
+        },
+        Emb:{
+            colour : "#adf0ad"
+        }
+    }
     }
 } 
     console.log(tree.metadata);
@@ -423,13 +433,14 @@ tree.on('click', function (e) {
     var selected = node.getChildProperties('id');
     // snp-distances
     if (selected.length > 1) {
-        var table_head = "<thead>\n<tr>\n";
+        var table_head = "<thead>\n<tr>\n<th></th>";
         var table_body = "<tbody>";
         for (var i = 0; i < selected.length; i++) {
             console.log(selected[i]);
             table_head = table_head + '<th>' + selected[i] + '</th>\n';
             var row = '<tr>\n';
-            // console.log($('#'+selected[i]+''));
+            var first_cell= $('.' + selected[i] + '_snp-dists')[0].innerHTML;
+            row = row + '<td>' + first_cell + '</td>';
             for (var j = 0; j < selected.length; j++) {
                 console.log(selected[j]);
                 console.log($('.'+selected[i]+'_'+selected[j])[0].innerHTML);
@@ -629,53 +640,6 @@ $('button.detail-button').click(function(){
 
 
 
-
-// for showing snp-distances of selected isolates from tree 
-var ds = new DragSelect({
-selectables: document.getElementsByClassName('tiplab'),
-area: document.getElementById('phylogeny'),
-callback: function(elements) {
-        var selected = [0];
-        console.log(elements.length);
-        if (elements.length > 1){
-                $.each(elements, function( index, value ) {
-                        var cols = $('#snp-distances th:contains(' + value.innerHTML + ')');
-                        var index = cols.index();
-                        selected.push(index);
-                        });
-                console.log(selected);
-                var table_head = "<thead>\n<tr>\n";
-                var table_body = "<tbody>";
-                $.each(selected, function( index, row){
-                        var body_row = "<tr>";
-                        $.each(selected, function(index, cell){
-                                // console.log(" row " + row + " cell " + cell);
-                                console.log($('#snp-distances tr:eq('+row+')')[0].cells[cell].innerHTML);
-                                
-                                if (row == 0) {
-                                        body_row = body_row + "<th>" + $('#snp-distances tr:eq('+row+')')[0].cells[cell].innerHTML + "</th>\n";
-                                } else  {
-                                        body_row = body_row + "<td>" + $('#snp-distances tr:eq('+row+')')[0].cells[cell].innerHTML + "</td>\n";
-                                }
-                        });
-                        body_row = body_row ;
-                        if (row == 0) {
-                                table_head = table_head + body_row + "</tr></thead>\n";
-                        } else {
-                      
-                                table_body = table_body + body_row + "</tr>";
-                        }
-                });
-                table_body = table_body + "</tbody>";
-                // console.log(table_head);
-                // console.log(table_body);
-                var t = table_head + table_body;
-                $('.modal-selected-snps-table').html(t);
-                $("#myModal2").modal();
-        } 
-},
-
-}); 
 
 </script>
 {% endblock %}

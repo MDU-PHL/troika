@@ -150,21 +150,21 @@ def calculate_resistance(drugs_dict):
 
 def make_df(result_dict):
 
-    cols_list = ['MDU ID', 'Organism identification by WGS', 'Phylogenetic lineage', 'Predicted drug resistance','Rifampicin', 'Isoniazid', 'Pyrazinamide', 'Ethambutol','Moxifloxacin','Amikacin', 'Cycloserine', 'Ethionamide', 'Para-aminosalicyclic acid','Clofazimine', 'Delaminid', 'Bedaquiline', 'Linezolid','Database version used for analysis']
+    cols_list = ['Isolate', 'Organism identification by WGS', 'Phylogenetic lineage', 'Predicted drug resistance','Rifampicin', 'Isoniazid', 'Pyrazinamide', 'Ethambutol','Moxifloxacin','Amikacin', 'Cycloserine', 'Ethionamide', 'Para-aminosalicyclic acid','Clofazimine', 'Delaminid', 'Bedaquiline', 'Linezolid','Database version used for analysis']
     
     df = pandas.DataFrame.from_dict(data = result_dict, orient = 'index')
     df = df.reset_index()
-    df = df.rename(columns = {'index': 'MDU ID'})
+    df = df.rename(columns = {'index': 'Isolate'})
     df = df.reindex(cols_list, axis = 'columns')
 
     return df
 
 def save_results(result_dict):
 
-    with open('tbrnr.json', 'w') as j:
+    with open(f'troika.json', 'w') as j:
         json.dump(result_dict, j)
     df = make_df(result_dict)
-    df.to_csv('tbrnr.csv', index = False)
+    df.to_csv(f'troika.tab', index = False, sep = '\t')
 
 def collate_results(isolates, db):
     
@@ -188,7 +188,7 @@ def collate_results(isolates, db):
         for drug in drugs:
             d[drug] = drugs[drug]
         result_dict[isolate] = d
-    
+    # output_name = output[0].split('.')[0]
     save_results(result_dict)
 
 
@@ -217,5 +217,6 @@ if __name__ == "__main__":
     if len(sys.argv) == 3:
         isolates = sys.argv[1]
         db = sys.argv[2]
+        
         collate_results(isolates=isolates, db=db)
         
