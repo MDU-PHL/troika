@@ -97,7 +97,7 @@ def get_dr_variants(data):
         for mut in data['dr_variants']:
             drug = mut['drug']
             mutation = check_variants(mutation = mut, drug = drug)
-            if mutation != '' and drug not in ['streptomycin', 'aminoglycosides']:
+            if mutation != '' and drug not in ['aminoglycosides']: # TODO streptomycin needs to be added back in
                 if d[f'{drug.capitalize()}'] != 'No mutation detected':
                     d[f'{drug.capitalize()}'] = f"{ d[f'{drug.capitalize()}']},{mutation}"
                 else:
@@ -112,11 +112,11 @@ def calculate_resistance(drugs_dict):
     Mono-resistance predicted =resistance in one of rif, inh, emb or pza
     Poly-resistance predicted  = two or more resisance where both rif and inh are not included
     Multi-drug resistance predicted = rif and inh resistance plus or minus emb and pza
-    Extensive drug-resistance predicted rif and inh AND a flouroquinolone AND one of amikacin/capreomycin/kanamycin
+    Extensive drug-resistance predicted rif and inh AND a flouroquinolone AND one of amikacin/capreomycin/kanamycin/sm #TODO add Streptomycin to logic
     '''
     # list of drigs in flq or ack for xdr
     flqlist = ['Fluoroquinolones','Levofloxacin','Moxifloxacin','Ofloxacin','Ciprofloxacin']
-    acklist = ['Amikacin', 'Capreomycin', 'Kanamycin']
+    ackslist = ['Amikacin', 'Capreomycin', 'Kanamycin', 'Streptomycin']
     # initialise score 
     score = 0
     # initialise flq and ack values
@@ -141,7 +141,7 @@ def calculate_resistance(drugs_dict):
     elif score == 2 or score in range(4,6): # more than one first line drug where INH OR RIF can be present
         resistance = 'Poly-resistance predicted'
     elif score in range(6,9): # RIF and INH +/- PZA or EMB
-        if flq and ack: # there are mutations in a FLQ or amikacin,capreomycin,kanamycin
+        if flq and ack: # there are mutations in a FLQ and amikacin,capreomycin,kanamycin
             resistance = 'Extensive drug-resistance predicted'
         else:
             resistance = 'Multi-drug resistance predicted'

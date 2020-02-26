@@ -199,10 +199,10 @@
       {% for t in td %}
       {% if t.type == 'summary' %}
       <!-- <h2 style= "color: #3973ac; float:left;" class='summary-table-header'>Summary Table</h2> -->
-      <button type="button" class="btn btn-primary btn-xlg btn-outline-primary summary-table-button" ><h3>{{t.title}}</h3></button>
+      <button type="button" class="btn btn-primary btn-xlg btn-outline-primary btn-lg summary-table-button" >{{t.title}}</button>
       {% elif t.type == 'tree' %}
       <!-- <h2 style= "color: #3973ac; float:right;" class='phylogeny-table-header'>Phylogeny</h2> -->
-      <button type="button" class="btn btn-primary btn-xlg btn-outline-primary phylogeny-button" ><h3>{{t.title}}</h3></button>
+      <button type="button" class="btn btn-primary btn-xlg btn-outline-primary btn-lg phylogeny-button" >{{t.title}}</button>
       {% endif %}
       {% endfor %}
       <div id="tablediv" style = "display: none;">
@@ -221,7 +221,7 @@
           </table>
       </div>
       {% elif t.type == 'tree' %}
-    <div id="phylocanvas" style="width: 100%; height: {{tree_height}};" >
+    <div id="phylocanvas" style="width: 100%; height: {{height}};" >
       
       <!-- <p>{{message}}</p> -->
       
@@ -484,11 +484,6 @@ $("#change-tree").on("click", function (e) {
     }
     
 });
-
-
-
-
-
 
 $("button.summary-table-button").click(function(){
   console.log('selected table');

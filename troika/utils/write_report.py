@@ -210,16 +210,14 @@ class Report:
         version_pat = re.compile(r'\bv?(?P<major>[0-9]+)\.(?P<minor>[0-9]+)\.(?P<release>[0-9]+)(?:\.(?P<build>[0-9]+))?\b')
 
         if software == 'snp-dists':
-            v = '-v'
+            vs = '-v'
         else:
-            v = '--version'
+            vs = '--version'
+        cmd = f"{software} {vs} 2>&1"
         
-        if software in ['snippy']:
-            sft = subprocess.run([software, v], capture_output = True, encoding = 'utf-8')
-            sft = sft.stderr.strip()
-        else:
-            sft = subprocess.run([software, v], capture_output = True, encoding = 'utf-8')
-            sft = sft.stdout.strip()
+        p = subprocess.run(cmd, shell = True, capture_output=True, encoding = "utf-8")
+        sft = p.stdout
+        
         v = version_pat.search(sft)
         v = v.group()
         sft_version = f"{software} v.{v}"
@@ -300,6 +298,8 @@ class Report:
             summary_df['Species'] = 'Species detection not performed'
         summary_file = reportdir / 'summary_table.tab'
         summary_df.to_csv(summary_file, sep = '\t', index = False)
+
+        return len(summary_df['Isolate'])
 
     def get_metadata(self, report_dir):
 
@@ -394,7 +394,7 @@ class Report:
         # fill template
         date = datetime.datetime.today().strftime("%d/%m/%y")
         report_template = jinja2.Template(pathlib.Path(indexhtml).read_text())
-        reporthtml.write_text(report_template.render(newick = newick_string, display = display,tables = tables,td = td, snpdistances=snpdistances, snpdensity = snpdensity, modaltables = modaltables, date = date, metadata_string = metadata_string, height = height))
+        reporthtml.write_text(report_template.render(newick = newick_string, display = display,tables = tables,td = td, snpdistances=snpdistances, snpdensity = snpdensity, modaltables = modaltables, date = date, metadata_string = metadata_string, height = height*50))
     #    TODO pass a list of links for the javascript section called 'table'
     # TODO pass the value of the graphs as separate variable 
         return(True)
