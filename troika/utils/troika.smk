@@ -2,49 +2,13 @@ import pandas, pathlib, subprocess
 
 configfile:'config.yaml'
 
-
-def get_report_input(amr_only, final_output):
-    
-    fn = final_output.split(',')
-    fn = [f.strip("''\" ") for f in fn]
-    # print(fn)
-    report_input = [f"'report/{f.strip()}'" for f in fn if 'core.txt' not in f]
-
-    if not amr_only:
-        report_input.append(f"'report/core_genome.tab'")
-    
-    return ','.join(report_input)
-
-def get_final_output_string(string, amr_only):
-    string = ','.join([f"'{s}'" for s in string.split(',')])
-    file_list = f"'seqdata.tab',{string}"
-    if amr_only:
-        return file_list
-    else:
-        file_list = f"{file_list}, 'core.treefile', 'distances.tab','core.tab', 'core.txt'"
-        return file_list
-def get_troika_output(string):
-    s = string.split(',')
-    troika = ','.join([f"'{t}'" for t in s if 'mtb.tab' not in t])
-
-    return troika
-
-def get_troika_report(string):
-    sn = string.split(',')
-    sn = [s.strip("''\" ") for s in sn]
-    report_string = ','.join([f"'report/{s}'" for s in sn])
-    return report_string
-
-
-SAMPLES = config['samples'].split()
-SAMPLE_STRING = ','.join(SAMPLES)
-print(SAMPLE_STRING)
-SAMPLE_FOR_CORE = ' '.join(SAMPLES)
+SAMPLE = config['samples'].split()
 SINGULARITY_PATH_PROFILER = config['singularity_path_profiler'] # path to container for running tb-profiler
 PROFILER_THREADS = config['profiler_threads']
 SCRIPT_PATH = config['script_path']
  # a two (or three item) item list - jobid.csv, jobid.json, mtb.tab
-
+MODE = config['mode']
+POSITIVE_CONTROL = config['positive_control']
 DB_VERSION = config['db_version']
 RUN_SPECIES = config['run_species']
 KRAKEN_DB = config['kraken_db']
@@ -52,290 +16,218 @@ KRAKEN_DB = config['kraken_db']
 KRAKEN_THREADS = config['kraken_threads']
 SNIPPY_THREADS = config['snippy_threads']
 REFERENCE = config['reference']
+IDX = config['index']
 MASK = config['mask']
 AMR_ONLY = config['amr_only']
 WORKDIR = f"'{pathlib.Path.cwd().absolute()}'"
 TEMPLATE_PATH = config['template_path']
-TROIKA_OUTPUT = get_troika_output(config['final_output'])
-TROIKA_REPORT = get_troika_report(string= TROIKA_OUTPUT)
-FINAL_OUTPUT = get_final_output_string(config['final_output'], amr_only = AMR_ONLY)
-REPORT_INPUT = get_report_input(amr_only = AMR_ONLY, final_output= FINAL_OUTPUT)
-print(REPORT_INPUT)
-print(TROIKA_OUTPUT)
-print(TROIKA_REPORT)
+MIN_COV = config['min_cov']
+MIN_ALN = config['min_aln']
 
 rule all:
     input:
         # REPORT_INPUT,
-        'report/seqdata.tab','report/troika.tab','report/troika.json','report/core.treefile','report/distances.tab','report/core.tab','report/core_genome.tab',
-        expand("{sample}/tbprofiler.snpit_results.json", sample = SAMPLES), 
-        'core.aln',
-        'report/index.html'
+        'kraken.toml', 'iqtree.toml', 'report.toml', 'seqdata.toml', 'distances.toml','snippy_core.toml','resistance.toml', expand("{sample}/snpit.toml", sample = SAMPLE)
+        
 
-
-if RUN_SPECIES == True:
-    rule species:
-        input:
-            r1 = "{sample}/R1.fq.gz",
-            r2 = "{sample}/R2.fq.gz",
-        output:
-            '{sample}/kraken_report.txt'
-        params:
-            db = KRAKEN_DB,
-            threads = KRAKEN_THREADS
-        shell:
-            """
-            kraken2 --paired {input.r1} {input.r2} --db {params.db} --threads {params.threads} --minimum-base-quality 13 --report {output} --classified-out /dev/null --unclassified-out /dev/null
-            """
-
-    rule combine_kraken:
-        input:
-            expand("{sample}/kraken_report.txt", sample = SAMPLES)
-        output:
-            "mtb.tab"
-        params:
-            script_path = SCRIPT_PATH
-        shell:
-            """
-            python3 {params.script_path}/combine_kraken.py {input} {output}
-            """
-            
-rule seqdata:
+# if RUN_SPECIES == True:
+rule run_kraken:
     input:
-        '{sample}/R1.fq.gz',
-        '{sample}/R2.fq.gz'
+        r1='{sample}/R1.fq.gz',
+        r2='{sample}/R2.fq.gz'
     output:
-        "{sample}/seqdata.tab"
+        "{sample}/kraken.toml"
+    params:
+        kraken_db = KRAKEN_DB,
+        script_path = SCRIPT_PATH,
+        run_kraken = RUN_SPECIES
     shell:
         """
-        seqtk fqchk {input[0]} {input[1]} > {output}
+        python3 {params.script_path}/kraken.py {input.r1} {input.r2} {wildcards.sample} {params.run_kraken} {params.kraken_db} 
         """
-
-rule estimate_coverage:
+rule combine_kraken:
     input:
-        "{sample}/R1.fq.gz",
-        "{sample}/R2.fq.gz"
+        expand("{sample}/kraken.toml", sample = SAMPLE)
     output:
-        "{sample}/mash.txt"
-    shell:
-        """
-        mash sketch -r {input[0]} {input[1]} -m 3 -k 31 -o mash  &> {output}
-        """
-
-rule generate_yield:
-    input:
-        "{sample}/mash.txt",
-        "{sample}/seqdata.tab"
-    output:
-        "{sample}/yield.tab"
+        "kraken.toml"
     params:
         script_path = SCRIPT_PATH
     shell:
         """
-        python3 {params.script_path}/generate_yield.py {input[1]} {input[0]} {output}
+        python3 {params.script_path}/combine_kraken.py {input}
         """
+
+rule estimate_coverage:
+	input:
+		r1="{sample}/R1.fq.gz",
+		r2="{sample}/R2.fq.gz"
+	output:
+		"{sample}/mash.toml"
+	params:
+		script_path = SCRIPT_PATH
+	
+	shell:
+		"""
+		python3 {params.script_path}/mash.py {input.r1} {input.r2} {wildcards.sample} {output}
+		"""
+
+rule seqdata:
+	input:
+		r1 = '{sample}/R1.fq.gz',
+		r2 = '{sample}/R2.fq.gz',
+		mash = '{sample}/mash.toml'
+	output:
+		"{sample}/seqdata.toml"
+	params:
+		script_path=SCRIPT_PATH,
+		mincov = MIN_COV
+	
+	shell:
+		"""
+		python3 {params.script_path}/seqdata.py {input.r1} {input.r2} {wildcards.sample} {input.mash} {params.mincov}
+		"""
 
 rule combine_seqdata:
+	input:
+		expand("{sample}/seqdata.toml", sample = SAMPLE)
+	output:
+		"seqdata.toml"
+	params:
+		script_path=SCRIPT_PATH
+	shell:
+		"""
+		python3 {params.script_path}/combine_seqdata.py {input} 
+		"""
+rule snippy:
     input:
-        expand("{sample}/yield.tab", sample = SAMPLES)
+        seqdata = '{sample}/seqdata.toml',
+        kraken = '{sample}/kraken.toml'
+        
     output:
-        "seqdata.tab"
-    run:
-        import pathlib, pandas, numpy
-        sdfiles = f"{input}".split()
-        seqdata = pandas.DataFrame()
-        for sd in sdfiles:
-            p = pathlib.Path(sd)
-            df = pandas.read_csv(sd, sep = "\t")
-            df['Isolate'] = f"{p.parts[0]}"
-            if seqdata.empty:
-                seqdata = df
-            else:
-                seqdata = seqdata.append(df)
-        seqdata['Quality'] = numpy.where(seqdata['Estimated depth'] >= 40, 'PASS','FAIL')
-        seqdata = seqdata[['Isolate','Reads','Yield','GC content','Min len','Avg len','Max len','Avg Qual','Estimated depth', 'Quality']]
-        seqdata.to_csv(f"{output}", sep = '\t', index = False)
+        '{sample}/snippy.toml',
+    threads:
+        8
     
-rule run_snippy:
-    input:
-        r1 = "{sample}/R1.fq.gz",
-        r2 = "{sample}/R2.fq.gz",
-    output:
-        bam = '{sample}/snps.bam',
-        raw_vcf = '{sample}/snps.raw.vcf',
-        aln = '{sample}/snps.aligned.fa'
     params:
-        threads = SNIPPY_THREADS,
+        script_path=SCRIPT_PATH,
         reference = REFERENCE
-    
     shell:
         """
-        snippy --outdir {wildcards.sample} --ref {params.reference} --R1 {input.r1} --R2 {input.r2} --force --cpus {params.threads}
+        python3 {params.script_path}/snippy.py {input.seqdata} {input.kraken} {wildcards.sample} {output} {params.reference} {threads}
         """
+    
 
-# if not AMR_ONLY:
+rule qc_snippy: 
+    input:
+        '{sample}/snippy.toml'
+        
+    output:
+        '{sample}/snippy_qc.toml'
+    params:
+        script_path = SCRIPT_PATH,
+        minaln = MIN_ALN
+    shell:
+        """
+        python3 {params.script_path}/snippy_qc.py {input} {wildcards.sample} {output} {params.minaln}
+        """
 
 rule run_snippy_core:
     input:
-        expand('{sample}/snps.aligned.fa', sample = SAMPLES)
+        expand("{sample}/snippy_qc.toml", sample = SAMPLE)
     output:
-        'core.vcf',
-        'core.txt',
-        'core.aln', 
-        'core.full.aln',
-        'core.tab'
+        'snippy_core.toml'
+    
     params:
-        reference = REFERENCE,
-        sample_list = SAMPLE_FOR_CORE,
-        mask = MASK
+        mask_string = MASK,
+        script_path = SCRIPT_PATH,
+        reference = REFERENCE
     shell:
         """
-        snippy-core --ref {params.reference} --mask {params.mask} {params.sample_list}
+        python3 {params.script_path}/snippy_core.py {params.mask_string} {params.reference} {input}
         """
 
 rule run_snpdists:
     input:
-        'core.aln'
+        'snippy_core.toml'
     output:
-        'distances.tab' 
-    shell:
-        """
-        snp-dists {input} > {output}
-        """
-        
-rule index_reference:
-    input:
-        REFERENCE
-    output:
-        "ref.fa",
-        "ref.fa.fai"
-    run:
-        from Bio import SeqIO
-        import pathlib, subprocess
-        ref = f"{output[0]}"
-        idx = f"{output[1]}"
-        if '.fa' not in REFERENCE:
-            print(f"converting {REFERENCE}")
-            SeqIO.convert(f"{input[0]}", 'genbank', ref    , 'fasta')
-            print(f"converted {REFERENCE}")
-        else:
-            subprocess.run(f"ln -sf {REFERENCE} {ref}", shell = True)
-        subprocess.run(f"samtools faidx {ref}", shell =True)
-
-
-rule calculate_iqtree_command_core:
-    input:
-        aln = 'core.aln',
-        ref = "ref.fa"
-    output:
-        'run_iqtree_core.sh'
+        'distances.toml' 
     params:
-        script_path = SCRIPT_PATH,
+        script_path = SCRIPT_PATH
     shell:
-        "bash {params.script_path}/iqtree_generator.sh {input.ref} {input.aln} core 20 > {output}"
-
-
+        """
+        python3 {params.script_path}/snp_dists.py {input}
+        """
 
 rule run_iqtree_core:
     input:
-        'run_iqtree_core.sh'
+        core = 'snippy_core.toml', 
+        ref = REFERENCE, 
+        idx = IDX
     
     output:
-        'core.iqtree',
-        'core.treefile',
+        'iqtree.toml',
+    params:
+        script_path = SCRIPT_PATH	
     shell:
-        """    
-        bash run_iqtree_core.sh
-        rm *.ckp.gz *.contree *.bionj
-        """ 
-
-
-rule collate_report_files:
-    input:
-        'seqdata.tab', 'core.txt', 'core.treefile', 'core.tab', 'distances.tab', 'core.tab'
-    output:
-        'report/seqdata.tab', 'report/core_genome.tab', 'report/core.treefile','report/distances.tab','report/core.tab'
-    run:        
-        import pandas, pathlib, subprocess, numpy
-        
-        # for core.txt
-        df = pandas.read_csv(pathlib.Path(f"core.txt"), sep = '\t')
-        df['% USED'] = 100 * (df['LENGTH'] - df['UNALIGNED'])/ df['LENGTH']
-        df['% USED'] = df['% USED'].round(2)
-        df = df.rename(columns={'ID':'Isolate'})
-        df.to_csv(f"report/core_genome.tab", sep='\t', index = False)
-
-        cmd = f"""
-cp seqdata.tab report/seqdata.tab
-cp core.treefile report/core.treefile
-cp distances.tab report/distances.tab
-cp core.tab report/core.tab
-"""
-        subprocess.run(cmd, shell = True)
-
+        """	
+        python3 {params.script_path}/run_iqtree.py {input.core} {input.ref} {input.idx} {params.script_path}
+        """
+	
 rule run_tbprofiler:
     input:
-        bam = "{sample}/snps.bam"
+        snippy = "{sample}/snippy.toml",
+        kraken = "{sample}/kraken.toml",
+        qc = "{sample}/snippy_qc.toml"
     singularity:SINGULARITY_PATH_PROFILER
-    threads:PROFILER_THREADS
+    params:
+        script_path = SCRIPT_PATH,
+        threads = PROFILER_THREADS
     output:
-        "{sample}/tbprofiler.results.json"
+        "{sample}/tbprofiler.toml"
     shell:
         """
-        tb-profiler profile -a {input.bam} --caller bcftools -t {threads} -d {wildcards.sample}
-        mv {wildcards.sample}/results/tbprofiler.results.json {output}
-        rm -rf {wildcards.sample}/results {wildcards.sample}/bam {wildcards.sample}/vcf
+        python3 {params.script_path}/run_tbprofiler.py {input.snippy} {input.qc} {input.kraken} {wildcards.sample} {params.threads}
         """
 
 rule run_snpit:
     input:
-        vcf = "{sample}/snps.raw.vcf",
-        json = "{sample}/tbprofiler.results.json"
+        # snippy = "{sample}/snippy.toml",
+        tbprofiler = "{sample}/tbprofiler.toml"
     output:
-        "{sample}/tbprofiler.snpit_results.json"
+        "{sample}/snpit.toml"
     params:
         script_path = SCRIPT_PATH,
     shell:
         """
-        python3 {params.script_path}/run_snpit.py {input.vcf} {input.json} {output}
+        python3 {params.script_path}/run_snpit.py {input.tbprofiler} {wildcards.sample} 
         """
         
 rule collate_resistance:
     input:
-        expand("{sample}/tbprofiler.snpit_results.json", sample = SAMPLES)
+        expand("{sample}/snpit.toml", sample = SAMPLE)
     output:
-        'troika.tab', 'troika.json'
+        'resistance.toml'
     params:
         script_path = SCRIPT_PATH,
         db_version = DB_VERSION,
-        sample = SAMPLE_STRING
+        mode = MODE
     shell:
         """
-        python3 {params.script_path}/collate.py {params.sample} {params.db_version}
-        """
-
-rule mv_outputs:
-    input:
-        'troika.tab', 'troika.json'
-    output:
-        'report/troika.tab', 'report/troika.json'
-    shell:
-        """
-        mv {input[0]} {output[0]}
-        mv {input[1]} {output[1]}
+        python3 {params.script_path}/collate.py {params.db_version} {params.mode} {input}
         """
 
 rule collate_report:
     input:
-        'report/seqdata.tab','report/troika.tab','report/troika.json','report/core.treefile','report/distances.tab','report/core.tab','report/core_genome.tab',
+        'resistance.toml','iqtree.toml'
     output:
-        'report/index.html'
+        'report.toml', 'index.html'
     params:
         script_path = SCRIPT_PATH,
         template_path = TEMPLATE_PATH,
         wkdir = WORKDIR,
-        amr_only = AMR_ONLY
+        amr_only = AMR_ONLY,
+        idx = IDX
     shell:
         """
-        python3 {params.script_path}/write_report.py {params.template_path} {params.wkdir} {params.amr_only}
+        python3 {params.script_path}/write_report.py {params.template_path} {params.wkdir} {params.amr_only} {params.idx}
         """

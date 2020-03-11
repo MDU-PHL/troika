@@ -1,21 +1,10 @@
-import subprocess, pathlib, json, sys
-
-# print(vcfs)
-def unzip_vcf(vcf):
-    vcf_id = vcf.name.split('.')[0]
-    if pathlib.Path(vcf).suffix == ".gz":
-        gunzip= f"gunzip -d -c {vcf} > vcf/{vcf_id}.vcf"
-        subprocess.run(gunzip, shell = True, capture_output = True)
-        return f"vcf/{vcf_id}.vcf"
-    else:
-        return vcf
+import subprocess, pathlib, json, sys, toml
 
 def run_snpit(vcf):
     # print(vcf)   
     v = pathlib.Path(vcf)
     if v.exists():
-        unzipped_vcf = unzip_vcf(vcf = v)
-        cmd = f"/home/khhor/.local/bin/snpit --input {unzipped_vcf}" # convert to non kristy specific
+        cmd = f"/home/khhor/.local/bin/snpit --input {v}" # convert to non kristy specific
         p = subprocess.run(cmd, shell = True, capture_output = True, encoding = "utf-8")
         snpit_data = p.stdout.split("\n")
         lineage_strs = snpit_data[1].split('\t')
@@ -33,18 +22,56 @@ def append_to_json(lineage, json_file, outfile):
         'lineage':lineage[1],
         'family':lineage[2]
     }
+
     with open(outfile, 'w') as f:
         json.dump(j, f)
+    return j
+
+def run_cmd(cmd):
+
+    p = subprocess.run(cmd, shell = True, capture_output=True, encoding = 'utf-8')
+    return p.returncode
+
+def open_toml(tml):
+
+    data = toml.load(tml)
+
+    return data
+
+def write_toml(data, output):
+    
+    with open(output, 'wt') as f:
+        toml.dump(data, f)
+    
+def main(tbprofiler,isolate):
+    
+    tml = open_toml(tbprofiler)
+    print(tml)
+    data = {}
+    data[isolate] = {}
+    data[isolate]['snpit'] = {}
+    data[isolate]['tbprofiler'] = {}
+    if tml[isolate]['tbprofiler']['done'] == 'Yes':
+        vcf = f"{isolate}/snps.raw.vcf"
+        snpit = run_snpit(vcf = vcf)
+        data[isolate]['tbprofiler']['done'] = 'Yes'
+        data[isolate]['tbprofiler']['kmer-id'] = tml[isolate]['tbprofiler']['kmer-id']
+        data[isolate]['snpit']['species'] = snpit[0]
+        data[isolate]['snpit']['lineage'] = snpit[1]
+        data[isolate]['snpit']['family'] = snpit[2]
+        data[isolate]['snpit']['done'] = 'Yes'
+        data[isolate]['snpit']['data'] = append_to_json(lineage = snpit, json_file = f'{isolate}/tbprofiler.results.json', outfile = f'{isolate}/tbprofiler.snpit_results.json')
+    else:
+        data[isolate]['tbprofiler']['done'] = 'No'
+        data[isolate]['snpit']['done'] = 'No'
+        data[isolate]['tbprofiler']['kmer-id'] = tml[isolate]['tbprofiler']['kmer-id']
+        data[isolate]['snpit']['data'] = {}
+    write_toml(data = data, output = f"{isolate}/snpit.toml")
 
 
 
-if __name__ == "__main__":
-    # print(len(sys.argv))
-    if len(sys.argv) == 4:
-        vcf = sys.argv[1]
-        # print(vcf)
-        json_file = sys.argv[2]
-        outfile = sys.argv[3]
-        lineage = run_snpit(vcf)
-        append_to_json(lineage, json_file, outfile)
+if __name__ == '__main__':
+    
+    main(tbprofiler = f"{sys.argv[1]}", isolate = f"{sys.argv[2]}")
+    
 

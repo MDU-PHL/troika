@@ -40,7 +40,7 @@ class Troika(object):
         self.logger.addHandler(fh)
         self.logger.info(f"Initialising Troika")
         self.now = datetime.datetime.today().strftime("%d_%m_%y_%H")
-        self.day = datetime.datetime.today().strftime("%d_%m_%y")
+        self.date = datetime.datetime.today().strftime("%d_%m_%y")
         self.input_file = self.check_input_file(args.input_file)
         self.workdir = self.check_input_file(args.workdir)
         self.resources = self.check_input_file(args.resources)
@@ -50,14 +50,37 @@ class Troika(object):
         self.detect_species = args.detect_species
         self.db_version = versions.db_version
         self.jobs = args.jobs  
-        self.profiler_threads = args.profiler_threads
-        self.kraken_threads = args.kraken_threads
+        self.profiler_threads = int(args.profiler_threads)
+        self.kraken_threads = int(args.kraken_threads)
         self.kraken_db = args.kraken_db
-        self.snippy_threads = args.snippy_threads
+        self.snippy_threads = int(args.snippy_threads)
         self.profiler_version = versions.db_version
         self.isolates = ''
-        self.output = args.output
+        # self.output = args.output
         self.set_snakemake_jobs()
+        self.min_cov = args.min_cov
+        self.min_aln = args.min_aln
+        self.mode = 'mdu' if args.mode else 'normal'
+        if self.mode == 'mdu':
+            self.check_positive_control(args.positive_control)
+        else:
+            self.positive_control = {}
+
+
+    def check_positive_control(self, positive_control):
+        if positive_control == '' or not pathlib.Path(positive_control).exists():
+            self.logger.warning(f"You are running Troika for MDU service. You must include a path positive control.")
+            raise SystemExit
+        else:
+            p = pathlib.Path(positive_control)
+            reads = sorted(p.glob(f"*.f*q.gz"))
+            if len(reads) == 2:
+                self.positive_control = {0:"2999-99887", 1:reads[0], 2:reads[1]}
+                # return pos_string
+            else:
+                self.logger.warning(f"The path to positive control has not been found. Please check your settings and try again.")
+                raise SystemExit
+            
 
     def set_snakemake_jobs(self):
         '''
@@ -65,10 +88,10 @@ class Troika(object):
         '''
         self.logger.info(f"Determining number of jobs to run in parallel.")
         threads = max([self.kraken_threads, self.profiler_threads, self.snippy_threads])
-        if int(self.jobs * threads) > int(psutil.cpu_count()):
-            self.jobs = int(psutil.cpu_count()) - 1
+        # if int(self.jobs * threads) > int(psutil.cpu_count()):
+        #     self.jobs = int(psutil.cpu_count()) - 1
     
-        self.logger.info(f"TBrnr will run : {self.jobs} in parallel... keeping it nice.")
+        self.logger.info(f"Troika will run : {self.jobs} in parallel... keeping it nice.")
     
     def three_cols(self, tab):
         '''
@@ -168,7 +191,11 @@ class Troika(object):
         
         if tab.shape[0] < 4:
             self.resistance_only = True
-            
+        
+        if self.mode == 'mdu':
+            dx = pandas.DataFrame(self.positive_control, index = [0])
+            tab = tab.append(dx, sort = True)
+
         self.check_reads_exists(tab = tab)
         
         self.isolates = ' '.join(list(tab.iloc[:,0]))
@@ -216,14 +243,35 @@ class Troika(object):
         '''
         Generate the config file
         '''
-        final_output = f"{self.output}.csv,{self.output}.json"
+        config = {
+                'template_path': f"{self.resources / 'templates'}",
+                'script_path':f"{self.resources / 'utils'}", 
+                'samples':self.isolates,
+                'singularity_path_profiler' : self.singularity_path, 
+                'profiler_threads': self.profiler_threads, 
+                # 'final_output' : final_output, 
+                'db_version': self.db_version,
+                'run_species': self.detect_species,
+                'kraken_db': self.kraken_db,
+                'kraken_threads':self.kraken_threads, 
+                'snippy_threads': self.snippy_threads,
+                'amr_only': self.resistance_only, 
+                'reference': f"{self.resources / 'reference'/ 'tbdb.fasta'}", 
+                'index': f"{self.resources / 'reference'/ 'tbdb.fasta.fai'}", 
+                'mask': f"{self.resources / 'reference'/ 'mask.bed'}",
+                'mode': self.mode,
+                'positive_control': self.positive_control,
+                'min_cov':self.min_cov,
+                'min_aln':self.min_aln
+        }
+
         config_source = self.resources / "templates" / "config.yaml"
         self.logger.info(f"Writing config file")
         config_template = jinja2.Template(config_source.read_text())
         config_target = self.workdir / "config.yaml"
         config_target.write_text(
             config_template.render(
-                template_path = f"{self.resources / 'templates'}",script_path=f"{self.resources / 'utils'}", samples=self.isolates,singularity_path = self.singularity_path, profiler_threads = self.profiler_threads, final_output = final_output, db_version = self.db_version,run_species = self.detect_species,kraken_db = self.kraken_db, kraken_threads =self.kraken_threads, snippy_threads = self.snippy_threads, amr_only = self.resistance_only, reference = f"{self.resources / 'reference'/ 'tbdb.fasta'}", mask = f"{self.resources / 'reference'/ 'mask.bed'}"
+                config
             )
         )
   
@@ -261,12 +309,14 @@ class Troika(object):
         # check input file and get samples
         self.logger.info(f"Checking input file structure is correct and obtaining a list of samples.")
         self.get_samples()
-        self.logger.info(f"Generating a config file for todays TBrnr job.")
+        self.logger.info(f"Generating a config file for todays Troika job.")
         self.generate_smk_config()
         self.logger.info(f"All checks and preparations are completed.")
         if self.run_snakemake():
             self.logger.info(f"Checking that all outputs have been generated.")
-            if pathlib.Path(f"{self.output}.csv").exists() and pathlib.Path(f"{self.output}.json").exists():
+            if self.mode == 'normal' and pathlib.Path(f"troika.tab").exists():
+                self.logger.info(f"SUCCESS - all outputs have been generated. Have a nice day!")
+            elif self.mode == 'mdu' and pathlib.Path(f"MMS155_{self.date}.csv").exists():
                 self.logger.info(f"SUCCESS - all outputs have been generated. Have a nice day!")
             else:
                 self.logger.warning(f"Something has gone wrong, output files have not been correcty created. Please check the logs and try again.")

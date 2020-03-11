@@ -1,6 +1,5 @@
 
-import svgwrite, re, sys, subprocess
-from svgwrite import cm, mm
+import svgwrite, re, sys, subprocess, toml
 from Bio import Phylo
 import jinja2, pathlib, pandas, numpy, re
 from packaging import version
@@ -10,13 +9,13 @@ class Report:
     '''
     A class to generate the tables and figures for use in the report.html
     '''
-    def write_tables(self,reportdir, table):
+    def write_tables(self,table):
         '''
         Write a table, given a tab delimited file generate a html string
         '''
         # TODO add class isolate id to <tr>
         # TODO add class distances-isolate to tr if matrix and head-isolate to head td
-        path = reportdir / f"{table}"
+        path = pathlib.Path(f"{table}")
         if path.exists():
             data = open(path).readlines()
             # for header
@@ -55,7 +54,7 @@ class Report:
 
     
 
-    def get_table_data(self,reportdir, td):
+    def get_table_data(self,td):
         '''
         input:
             :reportdir: the directory where report files are kept
@@ -66,7 +65,7 @@ class Report:
 
         for tabletype in range(len(td)):
             table = td[tabletype]['file']
-            td[tabletype]['head'], td[tabletype]['body'] = self.write_tables(reportdir=reportdir, table=table)
+            td[tabletype]['head'], td[tabletype]['body'] = self.write_tables(table=table)
         
         return(td)
 
@@ -101,7 +100,7 @@ class Report:
         # show(p)
         return(script,div)
 
-    def plot_snpdensity(self,reportdir, workdir):
+    def plot_snpdensity(self,idx_file):
 
         '''
         generate a snp-density accross the genome plot - using the core.tab file
@@ -130,10 +129,10 @@ class Report:
             return(d)
         
         # open fai file and generate the dictionary
-        idx = pathlib.Path(workdir ,'ref.fa.fai')
-        d = generate_dict(idx)
+        
+        d = generate_dict(idx_file)
         # get the core file
-        core = reportdir / 'core.tab'
+        core = 'core.tab'
         df = pandas.read_csv(core, sep = '\t')
         # get a list of isolate names
         names = list(df.columns[3:len(df.columns)])
@@ -153,7 +152,7 @@ class Report:
         # return dictionary
         return(list(melted_df['POS_OFFSET']/1000))
 
-    def plot_distances(self,reportdir):
+    def plot_distances(self):
 
         '''
         generate a snp-density plot - using the distacnes.tab file
@@ -163,7 +162,7 @@ class Report:
             :distancescript: the javascript string for insert into html
             :distancesdiv: the html div for inster in html doc
         '''
-        distance = reportdir / 'distances.tab'
+        distance = 'distances.tab'
 
         df = pandas.read_csv(distance, sep = '\t')
         # get a list of isolate names
@@ -182,7 +181,7 @@ class Report:
         return(list(melted_df['value']))
 
 
-    def get_tree_string(self,reportdir):
+    def get_tree_string(self):
         '''
         Generate a tree image from a newick
         input:
@@ -192,7 +191,7 @@ class Report:
         '''
         # get tree
 
-        with open(f"{reportdir / 'core.treefile'}", 'r') as t:
+        with open(f"core.treefile", 'r') as t:
             tree = t.read().strip()
 
         return tree
@@ -237,7 +236,7 @@ class Report:
                tool_dict[t] = v
         return(tool_dict)
 
-    def get_software_file(self, reportdir):
+    def get_software_file(self):
         '''
         get the versions of software on the system at completion of the piepline
         input:
@@ -253,7 +252,7 @@ class Report:
         for t in tool_dict:
             versions.append(tool_dict[t])
         
-        p = reportdir / 'software_versions.tab'
+        p = pathlib.Path('software_versions.tab')
 
         p.write_text('\n'.join(versions))
 
@@ -265,7 +264,7 @@ class Report:
             start = start.merge(added)
         return(start)
 
-    def generate_summary(self, reportdir):
+    def generate_summary(self):
         '''
         function to generate a summary table
         '''
@@ -275,35 +274,36 @@ class Report:
         print(tabs)
         for tab in tabs:
             # print(df)
-            if tab == 'mtb.tab' and pathlib.Path(reportdir, 'mtb.tab').exists():
+            if tab == 'mtb.tab' and pathlib.Path('mtb.tab').exists():
                 species = pandas.read_csv(tab, sep = '\t')
-                species = species[['Isolate', '#1 Match']]
+                print(species)
+                species = species[['Isolate', 'Match #1']]
                 summary_df = self.merge_dfs(summary_df, species)
                 summary_df = summary_df.rename(columns={'#1 Match': 'Species'})
             elif 'seqdata' in tab:
-                seq = pandas.read_csv(pathlib.Path(reportdir, tab), sep = '\t')
+                seq = pandas.read_csv(pathlib.Path(tab), sep = '\t')
                 seq = seq[['Isolate', 'Estimated depth']]
                 summary_df = self.merge_dfs(summary_df, seq)
             elif 'core_genome' in tab:
-                core = pandas.read_csv(pathlib.Path(reportdir, tab), sep = '\t')
+                core = pandas.read_csv(pathlib.Path(tab), sep = '\t')
                 core = core[['Isolate', '% USED']]
-                summary_df = self.merge_dfs(summary_df, core)
+                summary_df = self.merge_dfs(summary_df,core)
             elif 'troika' in tab:
-                res = pandas.read_csv(pathlib.Path(reportdir, tab), sep = '\t')
+                res = pandas.read_csv(pathlib.Path(tab), sep = '\t')
                 # print(res.columns)
                 res = res[['Isolate', 'Predicted drug resistance', 'Phylogenetic lineage']]
                 # res = res.rename(columns = {'MDU ID': 'Isolate'})
                 summary_df = self.merge_dfs(summary_df,res)
         if 'Species' not in list(summary_df.columns):
             summary_df['Species'] = 'Species detection not performed'
-        summary_file = reportdir / 'summary_table.tab'
+        summary_file = 'summary_table.tab'
         summary_df.to_csv(summary_file, sep = '\t', index = False)
 
         return len(summary_df['Isolate'])
 
-    def get_metadata(self, report_dir):
+    def get_metadata(self):
 
-        resdata = pandas.read_csv(report_dir / 'troika.tab', sep = '\t') 
+        resdata = pandas.read_csv('troika.tab', sep = '\t') 
         data = {}
         for row in resdata.iterrows():
             print(row[1])
@@ -319,7 +319,18 @@ class Report:
             }
         return data,len(list(resdata['Isolate']))
 
-    def main(self,workdir, resources, amr_only):
+    def open_toml(self,tml):
+
+        data = toml.load(tml)
+
+        return data
+    
+    def write_toml(self,data, output):
+        
+        with open(output, 'wt') as f:
+            toml.dump(data, f)
+
+    def main(self,workdir, resources, amr_only, idx):
         '''
         main function of the report class ties it all together
         input:
@@ -331,22 +342,22 @@ class Report:
         
         # set up paths variables
         p = pathlib.Path('.')
-        
+        date = datetime.datetime.today().strftime("%d/%m/%y")
         # path to report data
-        reportdir = pathlib.Path(workdir,'report')
-        reporthtml = reportdir / 'index.html'
+        reportdir = pathlib.Path(workdir)
+        reporthtml = pathlib.Path('index.html')
         # path to html template
         indexhtml = pathlib.Path(resources,'index.html') # replace with template 
         # newick string
-        newick_path = reportdir / 'core.treefile'
+        newick_path = 'core.treefile'
         newick_string = open(newick_path).read().strip()
         # save tool table
-        self.get_software_file(reportdir = reportdir)
+        self.get_software_file()
         
         # table dictionary for each option
         
         td = [{'file':'seqdata.tab', 'title':'Sequence Data', 'link': 'sequence-data', 'type' : 'table'}, {'file':'summary_table.tab','title':'Summary', 'link':'summary', 'type':'summary'}, {'file':'troika.tab', 'title':'Drug Resistance', 'type':'table', 'link':'drug-resistance'}]
-        sp = reportdir / 'mtb.tab'
+        sp = 'mtb.tab'
         
         # TODO edit links to be title lower case separated by a -
         core_genome_td = {'file': 'core_genome.tab', 'title': 'Core Genome', 'link':'core-genome', 'type':'table'}
@@ -376,28 +387,37 @@ class Report:
             # print(t)
             # TODO if table add a modal modal + link and link will be title lowercase with hyphen
             if td[t]['type'] == 'table':
-                td[t]['head'], td[t]['body'] = self.write_tables(reportdir=reportdir, table=td[t]['file'])
+                td[t]['head'], td[t]['body'] = self.write_tables(table=td[t]['file'])
             if td[t]['type'] == 'tree':
-                td[t]['image'] = self.get_tree_string(reportdir = reportdir)
+                td[t]['image'] = self.get_tree_string()
             if td[t]['link'] == 'snp-distances':
-                td[t]['head'], td[t]['body'] = self.write_tables(reportdir=reportdir, table=td[t]['file'])
-                snpdistances = self.plot_distances(reportdir=reportdir)
+                td[t]['head'], td[t]['body'] = self.write_tables(table=td[t]['file'])
+                snpdistances = self.plot_distances()
             if td[t]['link'] == 'snp-density':
-                snpdensity= self.plot_snpdensity(reportdir= reportdir, workdir=workdir)
+                snpdensity= self.plot_snpdensity(idx_file = idx)
             if td[t]['type'] == 'versions':
-                td[t]['head'], td[t]['body'] = self.write_tables(reportdir=reportdir, table=td[t]['file'])
+                td[t]['head'], td[t]['body'] = self.write_tables(table=td[t]['file'])
             if td[t]['type'] == 'summary':
-                self.generate_summary(reportdir = reportdir)
-                td[t]['head'], td[t]['body'] = self.write_tables(reportdir = reportdir, table = td[t]['file'])
-        metadata_string,height  = self.get_metadata(reportdir)
-        
+                self.generate_summary()
+                td[t]['head'], td[t]['body'] = self.write_tables(table = td[t]['file'])
+        metadata_string,height  = self.get_metadata()
+        data = {'newick': newick_string, 
+                'display': display,
+                'tables': tables,
+                'td': td, 
+                'snpdistances':snpdistances, 
+                'snpdensity': snpdensity, 
+                'modaltables' : modaltables, 
+                'date': date, 
+                'metadata_string': metadata_string, 
+                'height': height*50}
+
+        self.write_toml(data, 'report.toml')
         # fill template
-        date = datetime.datetime.today().strftime("%d/%m/%y")
+        
         report_template = jinja2.Template(pathlib.Path(indexhtml).read_text())
-        reporthtml.write_text(report_template.render(newick = newick_string, display = display,tables = tables,td = td, snpdistances=snpdistances, snpdensity = snpdensity, modaltables = modaltables, date = date, metadata_string = metadata_string, height = height*50))
-    #    TODO pass a list of links for the javascript section called 'table'
-    # TODO pass the value of the graphs as separate variable 
-        return(True)
+        reporthtml.write_text(report_template.render(data))
+    
 
 if __name__ == '__main__':
     report = Report()
@@ -405,5 +425,5 @@ if __name__ == '__main__':
     wd = f"{sys.argv[2]}"
     print(wd)
     a = f"{sys.argv[3]}"
-    
-    report.main(resources=f"{sys.argv[1]}", workdir=wd, amr_only= a)
+    idx = f"{sys.argv[4]}"
+    report.main(resources=f"{sys.argv[1]}", workdir=wd, amr_only= a, idx = idx)

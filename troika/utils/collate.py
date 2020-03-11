@@ -1,4 +1,4 @@
-import json,pathlib,pandas, sys
+import json,pathlib,pandas, sys, datetime, toml, numpy
 
 
 def return_species(data):
@@ -91,7 +91,9 @@ def get_dr_variants(data):
         'Ofloxacin':'No mutation detected', 
         'Para-aminosalicylic_acid':'No mutation detected',
         'Pyrazinamide':'No mutation detected',
-        'Rifampicin':'No mutation detected'}
+        'Rifampicin':'No mutation detected',
+        'Streptomycin': 'No mutation detected'}
+    
     
     if data['dr_variants'] != []:
         for mut in data['dr_variants']:
@@ -127,7 +129,7 @@ def calculate_resistance(drugs_dict):
         if drugs_dict[d] != 'No mutation detected':
             if d in flqlist:
                 flq = True
-            elif d in acklist:
+            elif d in ackslist:
                 ack = True
             elif d in ['Rifampicin', 'Isoniazid']:
                 score = score + 3
@@ -150,30 +152,46 @@ def calculate_resistance(drugs_dict):
 
 def make_df(result_dict):
 
-    cols_list = ['Isolate', 'Organism identification by WGS', 'Phylogenetic lineage', 'Predicted drug resistance','Rifampicin', 'Isoniazid', 'Pyrazinamide', 'Ethambutol','Moxifloxacin','Amikacin', 'Cycloserine', 'Ethionamide', 'Para-aminosalicyclic acid','Clofazimine', 'Delaminid', 'Bedaquiline', 'Linezolid','Database version used for analysis']
+    cols_list = ['Isolate', 'Organism identification by WGS', 'Phylogenetic lineage', 'Predicted drug resistance','Rifampicin', 'Isoniazid', 'Pyrazinamide', 'Ethambutol','Moxifloxacin','Amikacin', 'Cycloserine', 'Ethionamide', 'Para-aminosalicylic acid','Clofazimine', 'Delamanid', 'Bedaquiline', 'Linezolid','Database version used for analysis']
     
     df = pandas.DataFrame.from_dict(data = result_dict, orient = 'index')
     df = df.reset_index()
-    df = df.rename(columns = {'index': 'Isolate'})
+    df = df.rename(columns = {'index': 'Isolate', 'Para-aminosalicylic_acid':'Para-aminosalicylic acid'})
     df = df.reindex(cols_list, axis = 'columns')
-
+    df = df.fillna('No mutation detected')
+    print(df)
     return df
-
+# ERR2120246
 def save_results(result_dict):
 
-    with open(f'troika.json', 'w') as j:
-        json.dump(result_dict, j)
+    write_toml(data = result_dict, output = 'resistance.toml')
     df = make_df(result_dict)
     df.to_csv(f'troika.tab', index = False, sep = '\t')
 
-def collate_results(isolates, db):
+
+def mdu_troika(result_dict):
+    date = datetime.datetime.today().strftime("%d_%m_%y")
+    edit_list = ['Predicted drug resistance','Rifampicin', 'Isoniazid', 'Pyrazinamide', 'Ethambutol','Moxifloxacin','Amikacin', 'Cycloserine', 'Ethionamide', 'Para-aminosalicylic acid','Clofazimine', 'Delamanid', 'Bedaquiline', 'Linezolid']
+    df = make_df(result_dict)
+    for e in edit_list:
+        df[e] = numpy.where(df['Organism identification by WGS'] != 'M. tuberculosis', '', df[e])
+    df = df.rename(columns = {'Isolate': 'MDU sample ID',
+                               'Organism identification by WGS': 'Identification (WGS)',
+                               'Predicted drug resistance':'Predicted drug resist. summary:'})
+    df = df.replace('No mutation detected','No mutn det')
+    df.to_csv(f'MMS155_{date}.csv', index = False)
+
+def collate_results(isolates, db, mode):
     
-    isolates = isolates.split(',')
+    # iszolates = isolates.split(',')
     result_dict = {}
     for isolate in isolates:
         p = pathlib.Path(isolate)
+
         json_path = p / f"tbprofiler.snpit_results.json"
+        print(json_path)
         data = json.load(open(json_path))
+        print(data)
         species = return_species(data)
         lineage = return_lineage(data)
         drugs = get_dr_variants(data)
@@ -190,6 +208,11 @@ def collate_results(isolates, db):
         result_dict[isolate] = d
     # output_name = output[0].split('.')[0]
     save_results(result_dict)
+    if mode == 'mdu':
+        mdu_troika(result_dict)
+
+    # if mdu:
+    #     results_mdu = mdu_troika(result_dict)
 
 
 
@@ -210,13 +233,31 @@ def collate_results(isolates, db):
 #     }
 # }
 
+def open_toml(tml):
 
+    data = toml.load(tml)
 
-if __name__ == "__main__":
+    return data
 
-    if len(sys.argv) == 3:
-        isolates = sys.argv[1]
-        db = sys.argv[2]
+def write_toml(data, output):
+    
+    with open(output, 'wt') as f:
+        toml.dump(data, f)
+
+def main(db, inputs, mode):
+    
+    isolates = []
+    for i in inputs:
+        tml = open_toml(i)
+        isolate = list(tml.keys())[0]
+        print(list(tml.keys())[0])
+        print(tml)
+        if tml[isolate]['snpit']['done'] == 'Yes' and tml[isolate]['tbprofiler']['done'] == 'Yes':
+            isolates.append(isolate)
+    collate_results(isolates=isolates, db=db, mode = mode)
         
-        collate_results(isolates=isolates, db=db)
-        
+
+if __name__ == '__main__':
+    
+    main(db = f"{sys.argv[1]}",mode = f"{sys.argv[2]}", inputs = sys.argv[3:])
+    

@@ -1,38 +1,63 @@
-import pandas, pathlib, subprocess
+import toml, pathlib, subprocess, sys, pandas
 
-def combine(input_list, output):
-    kfiles = f"{input}".split()
-    id_table = pandas.DataFrame()
-    for k in kfiles:
-        kraken = pathlib.Path(k)
-        df = pandas.read_csv(kraken, sep = "\t", header =None, names = ['percentage', 'frag1', 'frag2','code','taxon','name'])
-        df['percentage'] = df['percentage'].apply(lambda x:float(x.strip('%')) if isinstance(x, str) == True else float(x)) #remove % from columns
-        df = df.sort_values(by = ['percentage'], ascending = False)
-        df = df[df['code'].isin(['U','S'])]     
-        df = df.reset_index(drop = True) 
-        tdf = pandas.DataFrame()
-        d = {'Isolate': f"{kraken.parts[0]}",    
-                '#1 Match': df.ix[0,'name'].strip(), '%1': df.ix[0,'percentage'],
-                '#2 Match': df.ix[1,'name'].strip(), '%2': df.ix[1,'percentage'],       
-                '#3 Match': df.ix[2,'name'].strip(), '%3': df.ix[2,'percentage'] ,
-                '#4 Match': df.ix[3,'name'].strip(), '%4': df.ix[3,'percentage']
-                }
 
-        tdf = pandas.DataFrame(data = d, index= [0])
-        if id_table.empty:
-                id_table = tdf
+def combine_kraken(inputs):
+
+    tab = pandas.DataFrame()
+
+    for i in inputs:
+        tml = open_toml(i)
+        isolate = list(tml.keys())[0]
+        if tml[isolate]['kraken']['done'] == 'Yes':
+            top_3 = tml[isolate]['kraken']['top_3']
+            d = {
+                'Isolate':isolate,
+                'Match #1': top_3[0][0],
+                '%1':top_3[0][1],
+                'Match #2': top_3[1][0],
+                '%2':top_3[1][1],
+                'Match #3': top_3[2][0],
+                '%3':top_3[2][1],
+            }
+            df = pandas.DataFrame(d, index = [0])
+            df['Quality'] = 'PASS'
+        elif not tml[isolate]['kraken']['done'] == 'No':
+            df = pandas.DataFrame(data = {'Isolate': isolate,
+            'Quality': 'kmer-id not determined',
+            'Match #1': '', '%1': '', 'Match #2': '', '%2': '', 'Match #3': '', '%3':''},
+            index = [0])
+        if tab.empty:
+            tab = df
         else:
-                id_table = id_table.append(tdf, sort = True)
-    id_table = id_table[['Isolate','#1 Match' ,'%1','#2 Match','%2','#3 Match','%3']]
-    id_table.to_csv(f"{output}", sep ="\t", index = False)
-    subprocess.run(f"sed -i 's/%[0-9]/%/g' {output}", shell=True)
+            tab = tab.append(df, sort = True)
+    tab = tab[['Isolate', 'Match #1', '%1', 'Match #2', '%2', 'Match #3', '%3', 'Quality']]
+    tab.to_csv('mtb.tab', sep= '\t', index = False)
+    subprocess.run(f"sed -i 's/%[0-9]/%/g' mtb.tab", shell=True)
+    return tab
+
+def open_toml(tml):
+
+    data = toml.load(tml)
+
+    return data
+
+def write_toml(data, output):
+    
+    with open(output, 'wt') as f:
+        toml.dump(data, f)
+    
+def main(inputs):
+    
+    # set up data dict
+    tab = combine_kraken(inputs)
+    data = {}
+    data['kraken'] = tab.to_dict(orient= 'records')
+    write_toml(data = data, output= f'kraken.toml')
 
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
+    
+    main(inputs = sys.argv[1:])
+    
 
-    if len(sys.argv) == 2:
-        input_list = sys.argv[1]
-        output= sys.argv[2]
-        combine(input_list = input_list, output = output)
-        

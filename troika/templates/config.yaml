@@ -26,6 +26,16 @@ amr_only:
   {{amr_only}}
 template_path:
   {{template_path}}
+mode:
+  {{mode}}
+positive_control:
+  {{positive_control}}
+index:
+  {{index}}
+min_cov:
+  {{min_cov}}
+min_aln:
+  {{min_aln}}
 
 
 

@@ -68,36 +68,58 @@ def main():
     parser.add_argument(
         "--jobs", "-j", default=8, help="Number of jobs to run in parallel."
     )
-    parser.add_argument('--profiler_threads',
+    parser.add_argument(
+        '--profiler_threads',
         '-t',
         help='Number of threads to run TB-profiler', 
         default=1
     )
-    parser.add_argument('--kraken_threads',
+    parser.add_argument(
+        '--kraken_threads',
         '-kt',
         help = 'Number of threads for kraken',
         default = 4
     )
-    parser.add_argument('--kraken_db', 
+    parser.add_argument(
+        '--kraken_db', 
         '-k', 
         env_var='KRAKEN2_DEFAULT_DB', 
         help='Path to DB for use with kraken2, if no DB present speciation will not be performed.'
     )
-    parser.add_argument('--snippy_threads',
+    parser.add_argument(
+        '--snippy_threads',
         '-st',
         help = 'Number of threads for snippy',
         default = 8
     )
-    parser.add_argument('--output',
-        '-o',
-        help = "Name of output files",
-        default=f"troika"
+    parser.add_argument(
+        '--mode',
+        '-m',
+        help = "If running for MDU service",
+        action="store_true"
     )
-    parser.add_argument('--db_version',
+    parser.add_argument(
+        '--positive_control',
+        '-pc',
+        help = 'Path to positive control - REQUIRED if running for MDU service',
+        default= '')
+    parser.add_argument(
+        '--db_version',
         help=f'The version of database being used.', 
         default=versions.db_version
     )
-
+    parser.add_argument(
+        '--min_cov',
+        '-mc',
+        default=40,
+        help = f"Minimum coverage for quality checks, isolates with coverage below this threshold will not be used in the analysis."
+    )
+    parser.add_argument(
+        '--min_aln',
+        '-ma    ',
+        default=80,
+        help = f"Minimum alignment for phylogenetic analysis, alignments lower than this threshold will not be included in the calculation of core-genome."
+    )
     parser.set_defaults(func=run_pipeline)
     args = parser.parse_args()
     
