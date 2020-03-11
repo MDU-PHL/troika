@@ -21,7 +21,7 @@ def deploy(ctx):
     ctx.run("python3 -m twine check dist/*")
     ctx.run("python3 -m twine upload dist/*")
     ctx.run("git push origin --tags")
-    ctx.run("git push kristy --tags")
+    # ctx.run("git push kristy --tags")
 
 @invoke.task
 def gitpush(ctx, message):
@@ -41,9 +41,9 @@ def gittag(ctx, tag, message):
     for any change that will change behaviour
     """
     message = ' '.join(message.split('_'))
-    ctx.run("git add -A")
-    ctx.run(f"git commit -m '{message}'")
-    ctx.run(f"git tag -a {tag} -m {message}")
+    # ctx.run("git add -A")
+    # ctx.run(f"git commit -m '{message}'")
+    # ctx.run(f"git tag -a {tag} -m {message}")
     ctx.run("git push origin --tags")
 
     
