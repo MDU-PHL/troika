@@ -12,7 +12,7 @@ import subprocess
 import json
 from Bio import SeqIO, Phylo
 from packaging import version
-import versions
+from troika.versions import db_version
 
 
 
@@ -48,13 +48,13 @@ class Troika(object):
         self.singularity_path = args.singularity_path
         self.resistance_only = args.resistance_only
         self.detect_species = args.detect_species
-        self.db_version = versions.db_version
+        self.db_version = db_version
         self.jobs = args.jobs  
         self.profiler_threads = int(args.profiler_threads)
         self.kraken_threads = int(args.kraken_threads)
         self.kraken_db = args.kraken_db
         self.snippy_threads = int(args.snippy_threads)
-        self.profiler_version = versions.db_version
+        self.profiler_version = db_version
         self.isolates = ''
         # self.output = args.output
         self.set_snakemake_jobs()

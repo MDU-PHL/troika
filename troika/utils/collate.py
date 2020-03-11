@@ -171,7 +171,7 @@ def save_results(result_dict):
 
 def mdu_troika(result_dict):
     date = datetime.datetime.today().strftime("%d_%m_%y")
-    edit_list = ['Predicted drug resistance','Rifampicin', 'Isoniazid', 'Pyrazinamide', 'Ethambutol','Moxifloxacin','Amikacin', 'Cycloserine', 'Ethionamide', 'Para-aminosalicylic acid','Clofazimine', 'Delamanid', 'Bedaquiline', 'Linezolid']
+    edit_list = ['Phylogenetic lineage', 'Predicted drug resistance','Rifampicin', 'Isoniazid', 'Pyrazinamide', 'Ethambutol','Moxifloxacin','Amikacin', 'Cycloserine', 'Ethionamide', 'Para-aminosalicylic acid','Clofazimine', 'Delamanid', 'Bedaquiline', 'Linezolid']
     df = make_df(result_dict)
     for e in edit_list:
         df[e] = numpy.where(df['Organism identification by WGS'] != 'M. tuberculosis', '', df[e])

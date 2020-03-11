@@ -12,20 +12,22 @@ import pathlib
 import sys
 import os
 import datetime
-import RunTroika
-import versions
+from troika.RunTroika import Troika
+from troika.versions import db_version, troika_version
+
 
 def run_pipeline(args):
     '''
     Run the pipeline
     '''
-    T = RunTroika.Troika(args)
+    T = Troika(args)
     return(T.run_pipeline())
 
 def main():
     # setup the parser
   
     parser = configargparse.ArgumentParser(description='Troika - a pipeline for phylogenentic analysis, detection and reporting of genomic AST in Mtb',formatter_class=configargparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s ' + troika_version)
     # use add_argument
     parser.add_argument('--input_file',
         '-i', 
@@ -103,10 +105,11 @@ def main():
         '-pc',
         help = 'Path to positive control - REQUIRED if running for MDU service',
         default= '')
+
     parser.add_argument(
         '--db_version',
         help=f'The version of database being used.', 
-        default=versions.db_version
+        default=db_version
     )
     parser.add_argument(
         '--min_cov',
