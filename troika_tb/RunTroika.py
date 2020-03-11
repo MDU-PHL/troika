@@ -12,7 +12,7 @@ import subprocess
 import json
 from Bio import SeqIO, Phylo
 from packaging import version
-from troika.versions import db_version
+from troika_tb.versions import db_version
 
 
 
