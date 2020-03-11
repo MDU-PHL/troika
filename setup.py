@@ -1,5 +1,5 @@
 from setuptools import setup, find_packages
-import troika
+import troika_tb
 
 
 

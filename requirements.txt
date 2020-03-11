@@ -1,6 +1,6 @@
 jinja2
 biopython>=1.70
-pandas>=0.23.0
+pandas>=1.0.1
 pathlib
 numpy
 svgwrite
@@ -8,5 +8,5 @@ psutil
 pytest
 sh
 packaging
-snakemake>=5.4.0
+snakemake>=5.10.0
 xlsxwriter
