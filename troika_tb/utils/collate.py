@@ -1,5 +1,6 @@
 import json,pathlib,pandas, sys, datetime, toml, numpy
 
+from snakemake import shell
 
 def return_species(data):
     '''
@@ -255,9 +256,9 @@ def main(db, inputs, mode):
         if tml[isolate]['snpit']['done'] == 'Yes' and tml[isolate]['tbprofiler']['done'] == 'Yes':
             isolates.append(isolate)
     collate_results(isolates=isolates, db=db, mode = mode)
-        
+    
+db = snakemake.params.db_version
+mode = snakemake.params.mode
+inputs = snakemake.input
 
-if __name__ == '__main__':
-    
-    main(db = f"{sys.argv[1]}",mode = f"{sys.argv[2]}", inputs = sys.argv[3:])
-    
+main(db = db,mode = mode, inputs = inputs)

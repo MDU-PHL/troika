@@ -4,6 +4,7 @@ configfile:'config.yaml'
 
 SAMPLE = config['samples'].split()
 SINGULARITY_PATH_PROFILER = config['singularity_path_profiler'] # path to container for running tb-profiler
+SINGULARITY_PATH_SNIPPY = config['singularity_path_profiler'] # path to container for running tb-profiler
 PROFILER_THREADS = config['profiler_threads']
 SCRIPT_PATH = config['script_path']
  # a two (or three item) item list - jobid.csv, jobid.json, mtb.tab
@@ -28,9 +29,7 @@ rule all:
     input:
         # REPORT_INPUT,
         'kraken.toml', 'iqtree.toml', 'report.toml', 'seqdata.toml', 'distances.toml','snippy_core.toml','resistance.toml', expand("{sample}/snpit.toml", sample = SAMPLE)
-        
 
-# if RUN_SPECIES == True:
 rule run_kraken:
     input:
         r1='{sample}/R1.fq.gz',
@@ -41,10 +40,11 @@ rule run_kraken:
         kraken_db = KRAKEN_DB,
         script_path = SCRIPT_PATH,
         run_kraken = RUN_SPECIES
-    shell:
+    script:
         """
-        python3 {params.script_path}/kraken.py {input.r1} {input.r2} {wildcards.sample} {params.run_kraken} {params.kraken_db} 
+        kraken.py
         """
+
 rule combine_kraken:
     input:
         expand("{sample}/kraken.toml", sample = SAMPLE)
@@ -52,9 +52,9 @@ rule combine_kraken:
         "kraken.toml"
     params:
         script_path = SCRIPT_PATH
-    shell:
+    script:
         """
-        python3 {params.script_path}/combine_kraken.py {input}
+        combine_kraken.py
         """
 
 rule estimate_coverage:
@@ -66,9 +66,9 @@ rule estimate_coverage:
 	params:
 		script_path = SCRIPT_PATH
 	
-	shell:
+	script:
 		"""
-		python3 {params.script_path}/mash.py {input.r1} {input.r2} {wildcards.sample} {output}
+		mash.py
 		"""
 
 rule seqdata:
@@ -82,9 +82,9 @@ rule seqdata:
 		script_path=SCRIPT_PATH,
 		mincov = MIN_COV
 	
-	shell:
+	script:
 		"""
-		python3 {params.script_path}/seqdata.py {input.r1} {input.r2} {wildcards.sample} {input.mash} {params.mincov}
+		seqdata.py
 		"""
 
 rule combine_seqdata:
@@ -94,10 +94,11 @@ rule combine_seqdata:
 		"seqdata.toml"
 	params:
 		script_path=SCRIPT_PATH
-	shell:
+	scripts:
 		"""
-		python3 {params.script_path}/combine_seqdata.py {input} 
+		combine_seqdata.py
 		"""
+
 rule snippy:
     input:
         seqdata = '{sample}/seqdata.toml',
@@ -107,15 +108,14 @@ rule snippy:
         '{sample}/snippy.toml',
     threads:
         8
-    
+    singularity: SINGULARITY_PATH_SNIPPY
     params:
         script_path=SCRIPT_PATH,
         reference = REFERENCE
-    shell:
+    script:
         """
-        python3 {params.script_path}/snippy.py {input.seqdata} {input.kraken} {wildcards.sample} {output} {params.reference} {threads}
+        snippy.py
         """
-    
 
 rule qc_snippy: 
     input:
@@ -126,9 +126,9 @@ rule qc_snippy:
     params:
         script_path = SCRIPT_PATH,
         minaln = MIN_ALN
-    shell:
+    script:
         """
-        python3 {params.script_path}/snippy_qc.py {input} {wildcards.sample} {output} {params.minaln}
+        snippy_qc.py
         """
 
 rule run_snippy_core:
@@ -136,14 +136,14 @@ rule run_snippy_core:
         expand("{sample}/snippy_qc.toml", sample = SAMPLE)
     output:
         'snippy_core.toml'
-    
+    singularity: SINGULARITY_PATH_SNIPPY
     params:
         mask_string = MASK,
         script_path = SCRIPT_PATH,
         reference = REFERENCE
-    shell:
+    script:
         """
-        python3 {params.script_path}/snippy_core.py {params.mask_string} {params.reference} {input}
+        snippy_core.py
         """
 
 rule run_snpdists:
@@ -151,11 +151,12 @@ rule run_snpdists:
         'snippy_core.toml'
     output:
         'distances.toml' 
+    singularity:SINGULARITY_PATH_SNIPPY
     params:
         script_path = SCRIPT_PATH
-    shell:
+    script:
         """
-        python3 {params.script_path}/snp_dists.py {input}
+        snp_dists.py
         """
 
 rule run_iqtree_core:
@@ -168,9 +169,9 @@ rule run_iqtree_core:
         'iqtree.toml',
     params:
         script_path = SCRIPT_PATH	
-    shell:
+    script:
         """	
-        python3 {params.script_path}/run_iqtree.py {input.core} {input.ref} {input.idx} {params.script_path}
+        run_iqtree.py
         """
 	
 rule run_tbprofiler:
@@ -184,22 +185,22 @@ rule run_tbprofiler:
         threads = PROFILER_THREADS
     output:
         "{sample}/tbprofiler.toml"
-    shell:
+    script:
         """
-        python3 {params.script_path}/run_tbprofiler.py {input.snippy} {input.qc} {input.kraken} {wildcards.sample} {params.threads}
+        run_tbprofiler.py
         """
 
 rule run_snpit:
     input:
-        # snippy = "{sample}/snippy.toml",
         tbprofiler = "{sample}/tbprofiler.toml"
     output:
         "{sample}/snpit.toml"
+    singularity:SINGULARITY_PATH_PROFILER
     params:
         script_path = SCRIPT_PATH,
-    shell:
+    script:
         """
-        python3 {params.script_path}/run_snpit.py {input.tbprofiler} {wildcards.sample} 
+        run_snpit.py
         """
         
 rule collate_resistance:
@@ -211,9 +212,9 @@ rule collate_resistance:
         script_path = SCRIPT_PATH,
         db_version = DB_VERSION,
         mode = MODE
-    shell:
+    script:
         """
-        python3 {params.script_path}/collate.py {params.db_version} {params.mode} {input}
+        collate.py
         """
 
 rule collate_report:
@@ -227,7 +228,7 @@ rule collate_report:
         wkdir = WORKDIR,
         amr_only = AMR_ONLY,
         idx = IDX
-    shell:
+    script:
         """
-        python3 {params.script_path}/write_report.py {params.template_path} {params.wkdir} {params.amr_only} {params.idx}
+        write_report.py
         """

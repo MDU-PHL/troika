@@ -1,5 +1,7 @@
 import toml, pathlib, subprocess, sys, pandas, datetime
 
+from snakemake import shell
+
 def get_isolate_list(inputs):
     
     print(inputs)
@@ -89,13 +91,12 @@ def main(inputs, mask, reference):
         data['snippy-core'][date]['stats'] = core_stats(inputs)
 
         write_toml(data = data, output = "snippy_core.toml")
+   
+inputs = snakemake.inputs
+mask = snakemake.params.mask_string
+reference = snakemake.params.reference
 
-if __name__ == '__main__':
-    
-    main(inputs = sys.argv[3:], mask = f"{sys.argv[1]}", reference = f"{sys.argv[2]}")
-    
-
-
+main(inputs = inputs, mask = mask, reference = reference)
 
 # mash triangle -C *.msh
 

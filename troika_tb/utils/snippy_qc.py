@@ -1,5 +1,7 @@
 import toml, pathlib, subprocess, sys, pandas
 
+from snakemake import shell
+
 from Bio import SeqIO
                 
                 
@@ -55,15 +57,13 @@ def main(inputs, isolate, output, minaln):
         data[isolate]['qc_snippy']['Quality'] = 'FAILED sequence QC will not be included in further analysis.'
     
     write_toml(data = data, output = f"{isolate}/snippy_qc.toml") 
-
-   
-
-if __name__ == '__main__':
     
-    main(inputs = f"{sys.argv[1]}", isolate = f"{sys.argv[2]}", output = f"{sys.argv[3]}",minaln = f"{sys.argv[4]}")
-    
+inputs = snakemake.inputs
+isolate = snakemake.wildcards.sample
+output = snakemake.output
+minaln = snakemake.params.minals
 
-
+main(inputs = inputs, isolate = isolate, output = output,minaln = minaln)
 
 # mash triangle -C *.msh
 

@@ -2,6 +2,8 @@ samples:
   {{samples}}
 singularity_path_profiler:
   {{singularity_path_profiler}}
+singularity_path_snippy:
+  {{singularity_path_snippy}}
 profiler_threads:
   {{profiler_threads}}
 script_path:

@@ -1,4 +1,5 @@
 import toml, pathlib, subprocess, sys
+from snakemake import shell
 
 
 def generate_snippy_cmd(r1, r2, isolate, reference, threads):
@@ -87,15 +88,12 @@ def main(seqdata,kraken, isolate, output, reference, threads):
             data[isolate]['snippy']['vcf'] = f"{isolate}/snps.vcf"
             data[isolate]['snippy']['cmd'] = cmd
     write_toml(data = data, output = f"{isolate}/snippy.toml") 
-    
 
-if __name__ == '__main__':
-    
-    main(seqdata = f"{sys.argv[1]}", kraken =f"{sys.argv[2]}", isolate = f"{sys.argv[3]}", output = f"{sys.argv[4]}",reference = f"{sys.argv[5]}", threads =f"{sys.argv[6]}" )
-    
+seqdata = snakemake.input.seqdata
+kraken = snakemake.input.kraken
+isolate = snakemake.wildcards.sample
+output = snakemake.output
+reference = snakemake.params.reference
+threads = snakemake.threads
 
-
-
-# mash triangle -C *.msh
-
-# mash sketch -m 5 -s 10000 -r -o 2019-12803-6/sketch -I 2019-12803-6 -C 2019-12803-6/R1.fq.gz 2019-12803-6/R1.fq.gz
+main(seqdata = seqdata, kraken =kraken, isolate = isolate, output = output,reference = reference, threads =threads)

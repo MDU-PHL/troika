@@ -1,9 +1,6 @@
 import toml, pathlib, subprocess, sys, pandas, datetime, json
 
-
-# tb-profiler profile -a {input.bam} --caller bcftools -t {threads} -d {wildcards.sample}
-# mv {wildcards.sample}/results/tbprofiler.results.json {output}
-# rm -rf {wildcards.sample}/results {wildcards.sample}/bam {wildcards.sample}/vcf
+from snakemake import shell
 
 def get_species(kraken):
     mtbc = ['pinnipedii', 'tuberculosis', 'orygis', 'bovis', 'bovis BCG', 'canetti', 'microti', 'africanum']
@@ -92,15 +89,12 @@ def main(snippy,qc, isolate, threads, kraken):
         data[isolate]['tbprofiler']['done'] = 'No'
         data[isolate]['tbprofiler']['kmer-id'] = 'kmer id not consistent with MTBC species'
         data[isolate]['tbprofiler']['data'] = get_data(isolate=isolate) 
-    write_toml(data = data, output = f"{isolate}/tbprofiler.toml")
+    write_toml(data = data, output = f"{isolate}/tbprofiler.toml")   
 
-if __name__ == '__main__':
-    
-    main(snippy = f"{sys.argv[1]}", qc = f"{sys.argv[2]}", kraken = f"{sys.argv[3]}", isolate = f"{sys.argv[4]}", threads = f"{sys.argv[5]}")
-    
+snippy = snakemake.input.snippy
+qc = snakemake.input.qc
+kraken = snakemake.input.kraken
+isolate = snakemake.wildcards.sample
+threads = snakemake.params.threads
 
-
-
-# mash triangle -C *.msh
-
-# mash sketch -m 5 -s 10000 -r -o 2019-12803-6/sketch -I 2019-12803-6 -C 2019-12803-6/R1.fq.gz 2019-12803-6/R1.fq.gz
+main(snippy = snippy, qc = qc, kraken = kraken, isolate = isolate, threads = threads)

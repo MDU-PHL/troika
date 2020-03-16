@@ -50,10 +50,17 @@ def main():
         help="If singularity is to be used for troika."
     )
     parser.add_argument(
-        '--singularity_path',
-        '-s',
+        '--profiler_singularity_path',
+        '-ps',
         help='URL for TB-profiler singularity container.',
-        default = 'docker://mduphl/tbprofiler'
+        default = 'docker://mduphl/mtbtools'
+    )
+    parser.add_argument(
+        '--snippy_singularity_path',
+        '-ss',
+        help='URL for Snippy singularity container.',
+        default = 'docker://mduphl/snippy:v4.4.3'
+
     )
     parser.add_argument(
         "--workdir",
@@ -97,8 +104,9 @@ def main():
     parser.add_argument(
         '--mode',
         '-m',
-        help = "If running for MDU service",
-        action="store_true"
+        help = "If running for MDU service use 'mdu', else use 'normal'",
+        default = 'normal',
+        choices = ['mdu', 'normal']
     )
     parser.add_argument(
         '--positive_control',

@@ -1,5 +1,6 @@
 import subprocess, pathlib, json, sys, toml
 
+from snakemake import shell
 def run_snpit(vcf):
     # print(vcf)   
     v = pathlib.Path(vcf)
@@ -68,10 +69,8 @@ def main(tbprofiler,isolate):
         data[isolate]['snpit']['data'] = {}
     write_toml(data = data, output = f"{isolate}/snpit.toml")
 
-
-
-if __name__ == '__main__':
     
-    main(tbprofiler = f"{sys.argv[1]}", isolate = f"{sys.argv[2]}")
-    
+tbprofiler = snakemake.input.tbprofiler
+isolate = snakemake.wildcards.sample
 
+main(tbprofiler = tbprofiler, isolate = isolate)

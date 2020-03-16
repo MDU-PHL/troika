@@ -1,5 +1,7 @@
 import toml, pathlib, subprocess, sys, pandas, datetime
 
+from snakemake import shell
+
 def generate_iqtree_cmd(script_path, aln):
 
     cmd = f"bash {script_path}/iqtree_generator.sh ref.fa {aln} core 20"								
@@ -46,14 +48,10 @@ def main(inputs, ref, idx, script_path):
     data['iqtree']['file'] = 'core.treefile'
 
     write_toml(data = data, output = "iqtree.toml")
-
-if __name__ == '__main__':
     
-    main(inputs = f"{sys.argv[1]}", ref = f"{sys.argv[2]}", idx = f"{sys.argv[3]}",script_path = f"{sys.argv[4]}")
-    
+inputs = snakemake.input.core
+ref = snakemake.input.ref
+idx = snakemake.input.idx
+script_path = snakemake.params.script_path
 
-
-
-# mash triangle -C *.msh
-
-# mash sketch -m 5 -s 10000 -r -o 2019-12803-6/sketch -I 2019-12803-6 -C 2019-12803-6/R1.fq.gz 2019-12803-6/R1.fq.gz
+main(inputs = inputs, ref = ref, idx = idx,script_path = script_path)

@@ -1,5 +1,6 @@
 import toml, pathlib, subprocess, sys, re
 
+from snakemake import shell
 
 def generate_seqdata_cmd(r1, r2, isolate):
     
@@ -79,15 +80,12 @@ def main(r1, r2, isolate, mash, mincov):
         data[isolate]['seqdata']['data']['Estimated_coverage'] = round(float(cov),2)
         data[isolate]['seqdata']['data']['Quality'] = 'PASS' if data[isolate]['seqdata']['data']['Estimated_coverage'] > int(mincov) else 'FAIL - will be removed from further analysis'
         write_toml(data = data, output = f"{isolate}/seqdata.toml")   
+  
+r1 = snakemake.input.r1
+r2 = snakemake.input.r2
+mash = snakemake.input.mash
+isolate = snakemake.wildcards.sample
+mincov = snakemake.params.mincov
 
+main(r1 = r1, r2 = r2, isolate = isolate, mash = mash, mincov = mincov)
 
-if __name__ == '__main__':
-    
-    main(r1 = f"{sys.argv[1]}", r2 = f"{sys.argv[2]}", isolate = f"{sys.argv[3]}", mash = f"{sys.argv[4]}", mincov = f"{sys.argv[5]}")
-    
-
-
-
-# mash triangle -C *.msh
-
-# mash sketch -m 5 -s 10000 -r -o 2019-12803-6/sketch -I 2019-12803-6 -C 2019-12803-6/R1.fq.gz 2019-12803-6/R1.fq.gz

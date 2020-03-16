@@ -45,7 +45,8 @@ class Troika(object):
         self.workdir = self.check_input_file(args.workdir)
         self.resources = self.check_input_file(args.resources)
         self.run_singulairty = args.Singularity
-        self.singularity_path = args.singularity_path
+        self.profiler_singularity_path = args.profiler_singularity_path
+        self.snippy_singularity_path = args.snippy_singularity_path
         self.resistance_only = args.resistance_only
         self.detect_species = args.detect_species
         self.db_version = db_version
@@ -63,6 +64,7 @@ class Troika(object):
         self.mode = 'mdu' if args.mode else 'normal'
         if self.mode == 'mdu':
             self.check_positive_control(args.positive_control)
+            self.run_singulairty = True
         else:
             self.positive_control = {}
 
@@ -247,7 +249,8 @@ class Troika(object):
                 'template_path': f"{self.resources / 'templates'}",
                 'script_path':f"{self.resources / 'utils'}", 
                 'samples':self.isolates,
-                'singularity_path_profiler' : self.singularity_path, 
+                'singularity_path_profiler' : self.profiler_singularity_path, 
+                'singularity_path_snippy' : self.snippy_singularity_path, 
                 'profiler_threads': self.profiler_threads, 
                 # 'final_output' : final_output, 
                 'db_version': self.db_version,

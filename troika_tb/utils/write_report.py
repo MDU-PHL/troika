@@ -5,6 +5,8 @@ import jinja2, pathlib, pandas, numpy, re
 from packaging import version
 import datetime
 
+from snakemake import shell
+
 class Report:
     '''
     A class to generate the tables and figures for use in the report.html
@@ -417,13 +419,11 @@ class Report:
         
         report_template = jinja2.Template(pathlib.Path(indexhtml).read_text())
         reporthtml.write_text(report_template.render(data))
-    
 
-if __name__ == '__main__':
-    report = Report()
-    print(sys.argv)
-    wd = f"{sys.argv[2]}"
-    print(wd)
-    a = f"{sys.argv[3]}"
-    idx = f"{sys.argv[4]}"
-    report.main(resources=f"{sys.argv[1]}", workdir=wd, amr_only= a, idx = idx)
+resources = snakemake.params.template_path
+workdir = snakemake.params.workdir
+amr_only = snakemake.params.amr_only
+idx = snakemake.params.idx
+
+R = Report()
+R.main(resources = resources, workdir = workdir, amr_only = amr_only, idx = idx)

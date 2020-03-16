@@ -1,5 +1,5 @@
 import toml, pathlib, subprocess, sys, pandas
-
+from snakemake import shell
 
 def combine_kraken(inputs):
 
@@ -54,10 +54,6 @@ def main(inputs):
     data['kraken'] = tab.to_dict(orient= 'records')
     write_toml(data = data, output= f'kraken.toml')
 
+inputs = snakemake.inputs
 
-
-if __name__ == '__main__':
-    
-    main(inputs = sys.argv[1:])
-    
-
+main(inputs = inputs)
