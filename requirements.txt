@@ -10,3 +10,4 @@ sh
 packaging
 snakemake>=5.9.1
 xlsxwriter
+toml
