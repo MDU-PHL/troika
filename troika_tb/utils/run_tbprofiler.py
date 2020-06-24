@@ -5,7 +5,7 @@ from snakemake import shell
 def get_species(kraken):
     mtbc = ['pinnipedii', 'tuberculosis', 'orygis', 'bovis', 'bovis BCG', 'canetti', 'microti', 'africanum']
     tml = open_toml(kraken)
-    print(tml)
+    # print(tml)
     isolate = list(tml.keys())[0]
     if tml[isolate]['kraken']['done'] == 'No':
         return 'kmer-id not performed'
@@ -26,7 +26,7 @@ def get_species(kraken):
 def generate_tbprofiler_cmd(snippy, isolate, threads):
     tml = open_toml(snippy)
     bam = f"{tml[isolate]['snippy']['bam']}"
-    cmd = f"tb-profiler profile -a {bam} --caller bcftools -t {threads} -d {isolate}"
+    cmd = f"tb-profiler profile -a {bam} --caller bcftools -t 6  -d {isolate}"
 
     return cmd
 
@@ -66,11 +66,11 @@ def write_toml(data, output):
     
 def main(snippy,qc, isolate, threads, kraken):
     
-    print(isolate)
+    # print(isolate)
     
     species = get_species(kraken)
     tml = open_toml(snippy)
-    print(tml)
+    # print(tml)
     data = {}
     data[isolate] = {}
     data[isolate]['tbprofiler'] = {}

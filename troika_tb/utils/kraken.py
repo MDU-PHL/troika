@@ -22,7 +22,7 @@ def generate_cmd(r1, r2, isolate, db, data):
     
     
     
-    cmd = f"kraken2 --paired {r1} {r2} --minimum-base-quality 13 --report {isolate}/kraken2.tab --memory-mapping --db {db}"
+    cmd = f"kraken2 --paired {r1} {r2} --minimum-base-quality 13 --report {isolate}/kraken2.tab --memory-mapping --db {db} --threads 4"
     data[isolate]['kraken']['kraken_db'] = f"{db}"
 
     return cmd, data

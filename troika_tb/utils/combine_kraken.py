@@ -21,11 +21,12 @@ def combine_kraken(inputs):
             }
             df = pandas.DataFrame(d, index = [0])
             df['Quality'] = 'PASS'
-        elif not tml[isolate]['kraken']['done'] == 'No':
+        else:
             df = pandas.DataFrame(data = {'Isolate': isolate,
             'Quality': 'kmer-id not determined',
             'Match #1': '', '%1': '', 'Match #2': '', '%2': '', 'Match #3': '', '%3':''},
             index = [0])
+        
         if tab.empty:
             tab = df
         else:
@@ -54,6 +55,6 @@ def main(inputs):
     data['kraken'] = tab.to_dict(orient= 'records')
     write_toml(data = data, output= f'kraken.toml')
 
-inputs = snakemake.inputs
+inputs = snakemake.input
 
 main(inputs = inputs)

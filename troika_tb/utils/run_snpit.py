@@ -1,11 +1,15 @@
+#!/usr/bin/env python3.7
+
 import subprocess, pathlib, json, sys, toml
 
 from snakemake import shell
+
+
 def run_snpit(vcf):
     # print(vcf)   
     v = pathlib.Path(vcf)
     if v.exists():
-        cmd = f"/home/khhor/.local/bin/snpit --input {v}" # convert to non kristy specific
+        cmd = f"snpit --input {v}"
         p = subprocess.run(cmd, shell = True, capture_output = True, encoding = "utf-8")
         snpit_data = p.stdout.split("\n")
         lineage_strs = snpit_data[1].split('\t')
@@ -18,14 +22,17 @@ def run_snpit(vcf):
 def append_to_json(lineage, json_file, outfile):
     isolate = pathlib.Path(json_file).name.split('.')[0]
     j = json.load(open(json_file))
+    # print(j)
+    # d = j
     j['snpit'] = {
         'species':lineage[0],
         'lineage':lineage[1],
         'family':lineage[2]
     }
-
+    
     with open(outfile, 'w') as f:
         json.dump(j, f)
+    
     return j
 
 def run_cmd(cmd):
@@ -40,14 +47,15 @@ def open_toml(tml):
     return data
 
 def write_toml(data, output):
-    
-    with open(output, 'wt') as f:
+    # print(data)
+    with open(output, 'w') as f:
+        
         toml.dump(data, f)
     
 def main(tbprofiler,isolate):
     
     tml = open_toml(tbprofiler)
-    print(tml)
+    # print(tml)
     data = {}
     data[isolate] = {}
     data[isolate]['snpit'] = {}
@@ -55,13 +63,21 @@ def main(tbprofiler,isolate):
     if tml[isolate]['tbprofiler']['done'] == 'Yes':
         vcf = f"{isolate}/snps.raw.vcf"
         snpit = run_snpit(vcf = vcf)
+        # print(snpit[0], snpit[1],snpit[1])
         data[isolate]['tbprofiler']['done'] = 'Yes'
         data[isolate]['tbprofiler']['kmer-id'] = tml[isolate]['tbprofiler']['kmer-id']
+        # print(data[isolate])
         data[isolate]['snpit']['species'] = snpit[0]
+        # # print(data[isolate]['snpit'])
         data[isolate]['snpit']['lineage'] = snpit[1]
+        # # print(data[isolate]['snpit'])
         data[isolate]['snpit']['family'] = snpit[2]
+        # print(data[isolate]['snpit'])
         data[isolate]['snpit']['done'] = 'Yes'
-        data[isolate]['snpit']['data'] = append_to_json(lineage = snpit, json_file = f'{isolate}/tbprofiler.results.json', outfile = f'{isolate}/tbprofiler.snpit_results.json')
+        # print(data[isolate]['snpit'])
+        append_to_json(lineage = snpit, json_file = f'{isolate}/tbprofiler.results.json', outfile = f'{isolate}/tbprofiler.snpit_results.json')
+        # print(isolate)
+        
     else:
         data[isolate]['tbprofiler']['done'] = 'No'
         data[isolate]['snpit']['done'] = 'No'

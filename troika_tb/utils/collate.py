@@ -160,7 +160,7 @@ def make_df(result_dict):
     df = df.rename(columns = {'index': 'Isolate', 'Para-aminosalicylic_acid':'Para-aminosalicylic acid'})
     df = df.reindex(cols_list, axis = 'columns')
     df = df.fillna('No mutation detected')
-    print(df)
+    # print(df)
     return df
 # ERR2120246
 def save_results(result_dict):
@@ -194,9 +194,13 @@ def collate_results(isolates, db, mode):
         data = json.load(open(json_path))
         print(data)
         species = return_species(data)
+        print(species)
         lineage = return_lineage(data)
+        print(lineage)
         drugs = get_dr_variants(data)
+        print(drugs)
         resistance = calculate_resistance(drugs)
+        print(resistance)
         
         d = {
             'Organism identification by WGS':species,
@@ -251,8 +255,8 @@ def main(db, inputs, mode):
     for i in inputs:
         tml = open_toml(i)
         isolate = list(tml.keys())[0]
-        print(list(tml.keys())[0])
-        print(tml)
+        # print(list(tml.keys())[0])
+        # print(tml)
         if tml[isolate]['snpit']['done'] == 'Yes' and tml[isolate]['tbprofiler']['done'] == 'Yes':
             isolates.append(isolate)
     collate_results(isolates=isolates, db=db, mode = mode)

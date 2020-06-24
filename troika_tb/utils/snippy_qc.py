@@ -58,10 +58,10 @@ def main(inputs, isolate, output, minaln):
     
     write_toml(data = data, output = f"{isolate}/snippy_qc.toml") 
     
-inputs = snakemake.inputs
+inputs = snakemake.input
 isolate = snakemake.wildcards.sample
 output = snakemake.output
-minaln = snakemake.params.minals
+minaln = snakemake.params.minaln
 
 main(inputs = inputs, isolate = isolate, output = output,minaln = minaln)
 

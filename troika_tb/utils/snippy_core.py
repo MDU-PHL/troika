@@ -92,7 +92,7 @@ def main(inputs, mask, reference):
 
         write_toml(data = data, output = "snippy_core.toml")
    
-inputs = snakemake.inputs
+inputs = snakemake.input
 mask = snakemake.params.mask_string
 reference = snakemake.params.reference
 

@@ -35,7 +35,7 @@ def main(inputs):
 
     write_toml(data = data, output= "seqdata.toml")
 
-inputs = snakemake.inputs
+inputs = snakemake.input
 
 main(inputs = inputs)
 

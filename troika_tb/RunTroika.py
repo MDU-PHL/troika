@@ -12,7 +12,7 @@ import subprocess
 import json
 from Bio import SeqIO, Phylo
 from packaging import version
-from troika_tb.versions import db_version
+from versions import db_version
 
 
 
@@ -61,12 +61,13 @@ class Troika(object):
         self.set_snakemake_jobs()
         self.min_cov = args.min_cov
         self.min_aln = args.min_aln
-        self.mode = 'mdu' if args.mode else 'normal'
+        self.mode = args.mode 
         if self.mode == 'mdu':
             self.check_positive_control(args.positive_control)
             self.run_singulairty = True
         else:
             self.positive_control = {}
+        self.check_rerun()
 
 
     def check_positive_control(self, positive_control):
@@ -82,7 +83,25 @@ class Troika(object):
             else:
                 self.logger.warning(f"The path to positive control has not been found. Please check your settings and try again.")
                 raise SystemExit
-            
+    
+    def check_rerun(self):
+        '''
+        Check if this is a rerun of an existing job if so archive results into a dated dir
+        '''
+        report_toml = self.workdir / "report.toml"
+        archive_dir = self.workdir / f"troika_output_{self.date}"
+        self.logger.info(f"Checking if output files already exist")
+        if report_toml.exists():
+            self.logger.info(f"It seems you are running this in a pre-existing troika directory, existing files will be archived")
+            if not archive_dir.exists():
+                archive_dir.mkdir()
+            ext_to_move = ["*.toml", "*.html", "*.csv", "new_isolates.txt"]
+            for e in ext_to_move:
+                cmd = f"mv {e} {archive_dir}"
+                self.logger.info(f"{e} are/is being moved to {archive_dir}")
+                subprocess.run(cmd, shell = True)
+                
+
 
     def set_snakemake_jobs(self):
         '''
@@ -101,7 +120,8 @@ class Troika(object):
         returns True if 3 columns False otherwise
         
         '''
-        self.logger.info(f"Checking that input file is the correct structure.")
+        print(tab)
+        self.logger.info(f"Checking that input file is the correct structure. There are {tab.shape[1]} columns")
         if tab.shape[1] == 3:
             return True
         else:
@@ -182,7 +202,7 @@ class Troika(object):
         get samples list after ensuring that structure of input is correct and reads can be found
         '''
 
-        tab = pandas.read_csv(self.input_file, sep = '\t', header = None)
+        tab = pandas.read_csv(f"{self.input_file}", sep = '\t', header = None)
         if not self.three_cols(tab):
             logging.warning(f"{self.input_file} does not appear to be in the correct configuration")
             raise TypeError(f"{self.input_file} has incorrect number of columns")
@@ -200,7 +220,8 @@ class Troika(object):
 
         self.check_reads_exists(tab = tab)
         
-        self.isolates = ' '.join(list(tab.iloc[:,0]))
+        self.isolates = ' '.join([i for i in tab.iloc[:,0] if '#' not in i])
+        self.logger.info(f"There are {len(list(tab.iloc[:,0]))} in this analysis")
     
     def check_input_file(self, path):
         '''
@@ -239,7 +260,7 @@ class Troika(object):
         if not self.run_singulairty:
             self.tbprofiler()
         else:
-            self.logger.info(f"You are using a singularity container from {self.singularity_path} today.")
+            self.logger.info(f"You are using a singularity container today.")
 
     def generate_smk_config(self):
         '''
@@ -294,7 +315,15 @@ class Troika(object):
         '''
         cmd = self.construct_command()
         self.logger.info(f"Now running AMR detection using the Troika pipeline with command {cmd}. Please be patient this may take some time.")
-        wkf = subprocess.run(cmd, shell = True, capture_output = True)
+        wkf = subprocess.run(cmd, shell = True)
+        while True:
+            if wkf.stdout != None:
+                line = wkf.stdout.readline().strip()
+                if not line:
+                    break
+            line = ''
+            break
+            self.self.logger.info(f"{line}")
         if wkf.returncode == 0:
             return True
         else:

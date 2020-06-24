@@ -3,6 +3,7 @@ import pandas, pathlib, subprocess
 configfile:'config.yaml'
 
 SAMPLE = config['samples'].split()
+
 SINGULARITY_PATH_PROFILER = config['singularity_path_profiler'] # path to container for running tb-profiler
 SINGULARITY_PATH_SNIPPY = config['singularity_path_profiler'] # path to container for running tb-profiler
 PROFILER_THREADS = config['profiler_threads']
@@ -28,6 +29,7 @@ MIN_ALN = config['min_aln']
 rule all:
     input:
         # REPORT_INPUT,
+        expand("{sample}/snippy.toml", sample = SAMPLE),
         'kraken.toml', 'iqtree.toml', 'report.toml', 'seqdata.toml', 'distances.toml','snippy_core.toml','resistance.toml', expand("{sample}/snpit.toml", sample = SAMPLE)
 
 rule run_kraken:
@@ -41,9 +43,7 @@ rule run_kraken:
         script_path = SCRIPT_PATH,
         run_kraken = RUN_SPECIES
     script:
-        """
-        kraken.py
-        """
+        "kraken.py"
 
 rule combine_kraken:
     input:
@@ -53,9 +53,7 @@ rule combine_kraken:
     params:
         script_path = SCRIPT_PATH
     script:
-        """
-        combine_kraken.py
-        """
+        "combine_kraken.py"
 
 rule estimate_coverage:
 	input:
@@ -67,9 +65,7 @@ rule estimate_coverage:
 		script_path = SCRIPT_PATH
 	
 	script:
-		"""
-		mash.py
-		"""
+		"mash.py"
 
 rule seqdata:
 	input:
@@ -83,9 +79,7 @@ rule seqdata:
 		mincov = MIN_COV
 	
 	script:
-		"""
-		seqdata.py
-		"""
+		"seqdata.py"
 
 rule combine_seqdata:
 	input:
@@ -94,10 +88,8 @@ rule combine_seqdata:
 		"seqdata.toml"
 	params:
 		script_path=SCRIPT_PATH
-	scripts:
-		"""
-		combine_seqdata.py
-		"""
+	script:
+		"combine_seqdata.py"
 
 rule snippy:
     input:
@@ -108,14 +100,12 @@ rule snippy:
         '{sample}/snippy.toml',
     threads:
         8
-    singularity: SINGULARITY_PATH_SNIPPY
+    # singularity: SINGULARITY_PATH_SNIPPY
     params:
         script_path=SCRIPT_PATH,
         reference = REFERENCE
     script:
-        """
-        snippy.py
-        """
+        "snippy.py"
 
 rule qc_snippy: 
     input:
@@ -127,37 +117,31 @@ rule qc_snippy:
         script_path = SCRIPT_PATH,
         minaln = MIN_ALN
     script:
-        """
-        snippy_qc.py
-        """
+        "snippy_qc.py"
 
 rule run_snippy_core:
     input:
         expand("{sample}/snippy_qc.toml", sample = SAMPLE)
     output:
         'snippy_core.toml'
-    singularity: SINGULARITY_PATH_SNIPPY
+    # singularity: SINGULARITY_PATH_SNIPPY
     params:
         mask_string = MASK,
         script_path = SCRIPT_PATH,
         reference = REFERENCE
     script:
-        """
-        snippy_core.py
-        """
+        "snippy_core.py"
 
 rule run_snpdists:
     input:
         'snippy_core.toml'
     output:
         'distances.toml' 
-    singularity:SINGULARITY_PATH_SNIPPY
+    # singularity:SINGULARITY_PATH_SNIPPY
     params:
         script_path = SCRIPT_PATH
     script:
-        """
-        snp_dists.py
-        """
+        "snp_dists.py"
 
 rule run_iqtree_core:
     input:
@@ -170,38 +154,32 @@ rule run_iqtree_core:
     params:
         script_path = SCRIPT_PATH	
     script:
-        """	
-        run_iqtree.py
-        """
+        "run_iqtree.py"
 	
 rule run_tbprofiler:
     input:
         snippy = "{sample}/snippy.toml",
         kraken = "{sample}/kraken.toml",
         qc = "{sample}/snippy_qc.toml"
-    singularity:SINGULARITY_PATH_PROFILER
+    # singularity:SINGULARITY_PATH_PROFILER
     params:
         script_path = SCRIPT_PATH,
         threads = PROFILER_THREADS
     output:
         "{sample}/tbprofiler.toml"
     script:
-        """
-        run_tbprofiler.py
-        """
+        "run_tbprofiler.py"
 
 rule run_snpit:
     input:
         tbprofiler = "{sample}/tbprofiler.toml"
     output:
         "{sample}/snpit.toml"
-    singularity:SINGULARITY_PATH_PROFILER
+    singularity:"docker://mduphl/snpit:v1.0.0"
     params:
         script_path = SCRIPT_PATH,
     script:
-        """
-        run_snpit.py
-        """
+        "run_snpit.py"
         
 rule collate_resistance:
     input:
@@ -213,9 +191,7 @@ rule collate_resistance:
         db_version = DB_VERSION,
         mode = MODE
     script:
-        """
-        collate.py
-        """
+        "collate.py"
 
 rule collate_report:
     input:
@@ -229,6 +205,4 @@ rule collate_report:
         amr_only = AMR_ONLY,
         idx = IDX
     script:
-        """
-        write_report.py
-        """
+        "write_report.py"

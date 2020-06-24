@@ -421,7 +421,7 @@ class Report:
         reporthtml.write_text(report_template.render(data))
 
 resources = snakemake.params.template_path
-workdir = snakemake.params.workdir
+workdir = snakemake.params.wkdir
 amr_only = snakemake.params.amr_only
 idx = snakemake.params.idx
 

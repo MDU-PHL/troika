@@ -42,7 +42,7 @@ def main(r1, r2, isolate, output):
 
 r1 = snakemake.input.r1
 r2 = snakemake.input.r2
-isolate = snakemake.params.sample
+isolate = snakemake.wildcards.sample
 output = snakemake.output
 
 main(r1 = r1, r2 = r2, isolate = isolate, output = output)

@@ -2,9 +2,9 @@ import toml, pathlib, subprocess, sys, pandas, datetime
 
 from snakemake import shell
 
-def generate_iqtree_cmd(script_path, aln):
+def generate_iqtree_cmd(script_path, aln, reference):
 
-    cmd = f"bash {script_path}/iqtree_generator.sh ref.fa {aln} core 20"								
+    cmd = f"bash {script_path}/iqtree_generator.sh {reference} {aln} core 20"								
     return cmd
 
 def generate_delete_cmd():
@@ -33,7 +33,7 @@ def main(inputs, ref, idx, script_path):
     t = open_toml(inputs)
     print(t)
     aln = 'core.aln'
-    cmd = generate_iqtree_cmd(aln = aln, script_path = script_path)
+    cmd = generate_iqtree_cmd(aln = aln, script_path = script_path, reference = ref)
     i = run_cmd(cmd)
     i = f"{i.strip()} -redo"
     print(i)

@@ -12,8 +12,8 @@ import pathlib
 import sys
 import os
 import datetime
-from troika_tb.RunTroika import Troika
-from troika_tb.versions import db_version, troika_version
+from RunTroika import Troika
+from versions import db_version, troika_version
 
 
 def run_pipeline(args):
