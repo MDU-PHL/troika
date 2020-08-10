@@ -15,8 +15,8 @@ def get_species(kraken):
         if 'Mycobacterium' in s:
             print('Mycobacterium genus found')
             for m in mtbc:
-                print(m)
-                print(m in s)
+                # print(m)
+                # print(m in s)
                 if m in s:
                     print("found MTBC species")
                     return 'MTBC'
@@ -37,9 +37,24 @@ def generate_mv_cmd(isolate):
 
 def get_data(isolate):
     
+    tb = {}
     if pathlib.Path(isolate,"tbprofiler.results.json").exists():
         d = json.load(open(f"{isolate}/tbprofiler.results.json"))
-        return d
+        tb['lineage'] = d['lineage']
+        tb['main_lin'] = d['main_lin']
+        tb['dr_variants'] = []
+        if d['dr_variants'] != []:
+            for dct in d['dr_variants']:
+                list_keys = list(dct.keys())
+                for k in list_keys:
+                    if 'sample' in k:
+                        dct.pop(k)
+                tb['dr_variants'].append(dct)
+        print(tb)
+        # for i in d:
+        #     print(i)
+        #     print(d[i])
+        return tb
     else:
         return {}
 
@@ -60,7 +75,13 @@ def open_toml(tml):
     return data
 
 def write_toml(data, output):
-    
+    # print(data)
+    # for i in data:
+    #         print(i)
+    #         print(data[i])
+    #         for j in data[i]:
+    #             print(j)
+    #             print(data[i][j])
     with open(output, 'wt') as f:
         toml.dump(data, f)
     
@@ -73,8 +94,9 @@ def main(snippy,qc, isolate, threads, kraken):
     # print(tml)
     data = {}
     data[isolate] = {}
-    data[isolate]['tbprofiler'] = {}
-    
+    data[isolate]['tb_profiler'] = {}
+    print(data)
+    print(tml)
     if tml[isolate]['snippy']['run_snippy'] == 'Yes' and species in ['MTBC', 'kmer-id not performed']:
         cmd = generate_tbprofiler_cmd(snippy = snippy, isolate = isolate, threads = threads)
         print(cmd)
@@ -82,13 +104,13 @@ def main(snippy,qc, isolate, threads, kraken):
         if p == 0:
             run_cmd(generate_mv_cmd(isolate = isolate))
             # run_cmd(generate_rm_cmd)
-            data[isolate]['tbprofiler']['done'] = 'Yes'
-            data[isolate]['tbprofiler']['kmer-id'] = species
-            data[isolate]['tbprofiler']['data'] = get_data(isolate=isolate)
+            data[isolate]['tb_profiler']['done'] = 'Yes'
+            data[isolate]['tb_profiler']['kmer-id'] = species
+            data[isolate]['tb_profiler']['data'] = get_data(isolate=isolate)
     else:
-        data[isolate]['tbprofiler']['done'] = 'No'
-        data[isolate]['tbprofiler']['kmer-id'] = 'kmer id not consistent with MTBC species'
-        data[isolate]['tbprofiler']['data'] = get_data(isolate=isolate) 
+        data[isolate]['tb_profiler']['done'] = 'No'
+        data[isolate]['tb_profiler']['kmer-id'] = 'kmer id not consistent with MTBC species'
+        data[isolate]['tb_profiler']['data'] = get_data(isolate=isolate) 
     write_toml(data = data, output = f"{isolate}/tbprofiler.toml")   
 
 snippy = snakemake.input.snippy
@@ -96,5 +118,10 @@ qc = snakemake.input.qc
 kraken = snakemake.input.kraken
 isolate = snakemake.wildcards.sample
 threads = snakemake.params.threads
-
+# snippy = f"2020-27522/snippy.toml"
+# kraken = f"2020-27522/kraken.toml"
+# isolate = f"2020-27522"
+# threads = 1
+# qc = f"2020-27522/snippy_qc.toml"
+# 2020-27522
 main(snippy = snippy, qc = qc, kraken = kraken, isolate = isolate, threads = threads)

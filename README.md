@@ -32,7 +32,7 @@ pip3 install Troika-Tb
 
 #### input
 
-Input for troika is a tab-delimited file containing three columns (no header) <sample_name> <path_to_read1> <path_to_read2>
+Input for troika is a tab-delimited file containing three columns (no header) `<sample_name> <path_to_read1> <path_to_read2>`
 
 ```
 troika -h

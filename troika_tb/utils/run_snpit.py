@@ -59,13 +59,13 @@ def main(tbprofiler,isolate):
     data = {}
     data[isolate] = {}
     data[isolate]['snpit'] = {}
-    data[isolate]['tbprofiler'] = {}
-    if tml[isolate]['tbprofiler']['done'] == 'Yes':
+    data[isolate]['tb_profiler'] = {}
+    if tml[isolate]['tb_profiler']['done'] == 'Yes':
         vcf = f"{isolate}/snps.raw.vcf"
         snpit = run_snpit(vcf = vcf)
         # print(snpit[0], snpit[1],snpit[1])
-        data[isolate]['tbprofiler']['done'] = 'Yes'
-        data[isolate]['tbprofiler']['kmer-id'] = tml[isolate]['tbprofiler']['kmer-id']
+        data[isolate]['tb_profiler']['done'] = 'Yes'
+        data[isolate]['tb_profiler']['kmer-id'] = tml[isolate]['tb_profiler']['kmer-id']
         # print(data[isolate])
         data[isolate]['snpit']['species'] = snpit[0]
         # # print(data[isolate]['snpit'])
@@ -79,9 +79,9 @@ def main(tbprofiler,isolate):
         # print(isolate)
         
     else:
-        data[isolate]['tbprofiler']['done'] = 'No'
+        data[isolate]['tb_profiler']['done'] = 'No'
         data[isolate]['snpit']['done'] = 'No'
-        data[isolate]['tbprofiler']['kmer-id'] = tml[isolate]['tbprofiler']['kmer-id']
+        data[isolate]['tb_profiler']['kmer-id'] = tml[isolate]['tbprofiler']['kmer-id']
         data[isolate]['snpit']['data'] = {}
     write_toml(data = data, output = f"{isolate}/snpit.toml")
 

@@ -257,7 +257,7 @@ def main(db, inputs, mode):
         isolate = list(tml.keys())[0]
         # print(list(tml.keys())[0])
         # print(tml)
-        if tml[isolate]['snpit']['done'] == 'Yes' and tml[isolate]['tbprofiler']['done'] == 'Yes':
+        if tml[isolate]['snpit']['done'] == 'Yes' and tml[isolate]['tb_profiler']['done'] == 'Yes':
             isolates.append(isolate)
     collate_results(isolates=isolates, db=db, mode = mode)
     
