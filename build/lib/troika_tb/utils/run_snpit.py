@@ -81,7 +81,7 @@ def main(tbprofiler,isolate):
     else:
         data[isolate]['tb_profiler']['done'] = 'No'
         data[isolate]['snpit']['done'] = 'No'
-        data[isolate]['tb_profiler']['kmer-id'] = tml[isolate]['tbprofiler']['kmer-id']
+        data[isolate]['tb_profiler']['kmer-id'] = tml[isolate]['tb_profiler']['kmer-id']
         data[isolate]['snpit']['data'] = {}
     write_toml(data = data, output = f"{isolate}/snpit.toml")
 

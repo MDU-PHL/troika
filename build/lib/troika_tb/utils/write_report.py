@@ -246,7 +246,8 @@ class Report:
             :pipeline: the type of pipeline
             :assembler: the assembler used in the pipeline
         '''
-        tools = ['snippy', 'snippy-core', 'snp-dists', 'iqtree', 'tb-profiler']
+        tools = ['snippy', 'snippy-core', 'snp-dists', 'iqtree' ]
+        #'tb-profiler']
         
         tool_dict = self.make_dict_versions(tools)
         
