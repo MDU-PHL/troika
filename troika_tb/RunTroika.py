@@ -152,7 +152,7 @@ class Troika(object):
         
         if read_source.exists():
             read_target = R / f"{r_pair}"
-            if not read_target.exists():
+            if not read_target.is_symlink():
                 read_target.symlink_to(read_source)
         else:
             self.logger.warning(f"{read_source} does not seem to a valid path. Please check your input and try again.")
