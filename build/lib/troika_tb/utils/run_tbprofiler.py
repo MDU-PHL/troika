@@ -107,6 +107,10 @@ def main(snippy,qc, isolate, threads, kraken):
             data[isolate]['tb_profiler']['done'] = 'Yes'
             data[isolate]['tb_profiler']['kmer-id'] = species
             data[isolate]['tb_profiler']['data'] = get_data(isolate=isolate)
+        else:
+            data[isolate]['tb_profiler']['done'] = 'No'
+            data[isolate]['tb_profiler']['kmer-id'] = 'kmer id not consistent with MTBC species'
+            data[isolate]['tb_profiler']['data'] = get_data(isolate=isolate)
     else:
         data[isolate]['tb_profiler']['done'] = 'No'
         data[isolate]['tb_profiler']['kmer-id'] = 'kmer id not consistent with MTBC species'
